@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 · 个人学习后台 — AI 闯关学堂原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+/* ============ 设计系统（轻漫画风 · 校园闯关手账） ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#FFF9EC; --paper2:#FBF0D8; --desk:#F2E7CE;
+  --ink:#2B2B2B; --ink-soft:#8B8170;
+  --pri:#FFB300; --pri-deep:#E29C00; --pri-soft:#FFE9B8;
+  --ok:#3DBE6B; --ok-deep:#2C9454; --ok-soft:#E4F7EC;
+  --bad:#F04F4F; --bad-deep:#CF3F3F; --bad-soft:#FCE8E8;
+  --info:#4A90E2; --info-deep:#3473C4; --info-soft:#E4F0FF;
+  --line:#EFE2C2;
+  --skin:#FFE3C0;
+}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  color:var(--ink);
+  background:radial-gradient(circle at 1px 1px, rgba(43,43,43,.045) 1px, transparent 0) 0 0/24px 24px, var(--desk);
+  min-height:100vh; padding:40px 24px 80px;
+}
+.font-display{font-family:"ZCOOL KuaiLe","PingFang SC","Microsoft YaHei",sans-serif; letter-spacing:.5px}
+
+.file-head{max-width:1280px;margin:0 auto 44px;background:var(--paper);border:2.5px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 rgba(43,43,43,.85);padding:26px 30px;position:relative;overflow:hidden}
+.file-head::after{content:"";position:absolute;right:-46px;top:-46px;width:150px;height:150px;border-radius:50%;background:repeating-conic-gradient(rgba(255,179,0,.14) 0 8deg, transparent 8deg 16deg)}
+.file-head h1{font-size:30px;position:relative;z-index:1}
+.file-head .sub{color:var(--ink-soft);font-size:14px;margin-top:6px;position:relative;z-index:1}
+.file-head .badge{display:inline-block;font-size:12px;font-weight:700;background:var(--pri);border:2px solid var(--ink);border-radius:8px;padding:2px 10px;margin-right:8px;transform:rotate(-2deg)}
+.legend{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;position:relative;z-index:1}
+.legend .dot{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.legend .sw{width:18px;height:18px;border-radius:6px;border:2px solid var(--ink);display:inline-block}
+.legend .note{font-size:12px;color:var(--ink-soft)}
+
+.frames{display:flex;flex-wrap:wrap;gap:56px 48px;justify-content:center;max-width:1420px;margin:0 auto}
+.frame-item{width:380px}
+.frame-item figcaption{background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 rgba(43,43,43,.85);margin-top:18px;padding:14px 16px}
+.frame-item figcaption h3{font-size:16px;display:flex;align-items:center;gap:8px}
+.frame-item figcaption .no{font-family:"ZCOOL KuaiLe";background:var(--pri);border:2px solid var(--ink);border-radius:8px;width:26px;height:26px;display:inline-grid;place-items:center;font-size:14px;flex:none}
+.frame-item figcaption ul{margin:8px 0 0 0;list-style:none}
+.frame-item figcaption li{font-size:12.5px;color:var(--ink-soft);padding-left:14px;position:relative;line-height:1.75}
+.frame-item figcaption li::before{content:"·";position:absolute;left:2px;font-weight:900;color:var(--pri-deep)}
+
+.phone{width:375px;height:812px;background:var(--paper);border:3.5px solid var(--ink);border-radius:46px;box-shadow:0 18px 40px rgba(43,43,43,.22), inset 0 0 0 3px #fff;margin:0 auto;position:relative;overflow:hidden}
+.screen{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.statusbar{height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:700}
+.sbody{flex:1;overflow:hidden;padding:0 18px 0;position:relative;display:flex;flex-direction:column}
+
+.btn{font-family:inherit;font-size:14px;font-weight:800;border:2px solid var(--ink);border-radius:13px;padding:10px 16px;background:var(--pri);color:var(--ink);box-shadow:0 3px 0 var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.ghost{background:#fff}
+.card{background:#fff;border:2px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 rgba(43,43,43,.85)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;border:1.5px solid var(--ink);background:var(--pri-soft)}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;margin:16px 2px 10px}
+.sec-title::before{content:"";width:8px;height:16px;background:var(--pri);border:2px solid var(--ink);border-radius:3px;transform:rotate(-3deg)}
+
+/* ---------- 吉祥物「闯闯」头像版 ---------- */
+.avatar{position:relative;width:64px;height:64px;border-radius:50%;border:2.5px solid var(--ink);background:var(--skin);flex:none;overflow:hidden;box-shadow:0 3px 0 rgba(43,43,43,.85)}
+.avatar .hair{position:absolute;background:var(--ink);border-radius:8px}
+.avatar .hair.h1{width:13px;height:19px;top:-4px;left:10px;transform:rotate(-20deg)}
+.avatar .hair.h2{width:10px;height:15px;top:-1px;left:27px;transform:rotate(14deg)}
+.avatar .eye{position:absolute;width:8px;height:10px;background:var(--ink);border-radius:50%;top:26px}
+.avatar .eye::after{content:"";position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;top:2px;left:2px}
+.avatar .eye.l{left:16px}.avatar .eye.r{right:16px}
+.avatar .blush{position:absolute;width:9px;height:5px;background:rgba(240,79,79,.35);border-radius:50%;top:37px}
+.avatar .blush.l{left:8px}.avatar .blush.r{right:8px}
+.avatar .mouth{position:absolute;top:38px;left:50%;transform:translateX(-50%);width:15px;height:8px;border:2.5px solid var(--ink);border-top:none;border-radius:0 0 12px 12px}
+
+/* ---------- 4.1 记录列表 ---------- */
+.profile{padding:8px 2px 0;display:flex;align-items:center;gap:14px}
+.profile .name{font-size:17px;font-weight:900}
+.profile .name small{font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-left:6px}
+.profile .lvl{margin-top:5px;display:flex;align-items:center;gap:8px}
+.profile .lvl .chip{background:var(--pri);border:2px solid var(--ink);border-radius:8px;font-size:11px;font-weight:900;padding:1px 8px}
+.profile .lvl .xpbar{width:130px;height:10px;border:2px solid var(--ink);border-radius:6px;background:#fff;overflow:hidden}
+.profile .lvl .xpbar i{display:block;height:100%;width:62%;background:repeating-linear-gradient(-45deg,var(--pri) 0 6px,#FFC93D 6px 12px)}
+.profile .lvl .xpt{font-size:10.5px;color:var(--ink-soft);font-weight:700}
+.week-stats{display:flex;gap:10px;margin-top:16px}
+.wstat{flex:1;background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 rgba(43,43,43,.85);text-align:center;padding:12px 4px}
+.wstat .v{font-family:"ZCOOL KuaiLe";font-size:20px;color:var(--pri-deep)}
+.wstat .k{font-size:10.5px;color:var(--ink-soft);font-weight:700;margin-top:2px}
+.filter{display:flex;gap:8px;margin-top:16px}
+.filter .f{flex:1;text-align:center;border:2px solid var(--ink);background:#fff;border-radius:10px;padding:6px 0;font-size:12px;font-weight:800;color:var(--ink-soft)}
+.filter .f.on{background:var(--pri);color:var(--ink)}
+.rec{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 rgba(43,43,43,.85);padding:11px 13px;margin-top:12px}
+.rec .ic{width:40px;height:40px;border:2px solid var(--ink);border-radius:12px;display:grid;place-items:center;flex:none;font-family:"ZCOOL KuaiLe";font-size:16px}
+.rec .t{font-size:13.5px;font-weight:800}
+.rec .d{font-size:11px;color:var(--ink-soft);margin-top:3px;font-weight:600}
+.rec .acc{margin-left:auto;text-align:center;flex:none}
+.rec .acc .p{font-family:"ZCOOL KuaiLe";font-size:18px}
+.rec .acc .p.g{color:var(--ok-deep)}
+.rec .acc .p.y{color:var(--pri-deep)}
+.rec .acc .p.r{color:var(--bad-deep)}
+.rec .acc .s{font-size:10.5px;color:var(--ink-soft);font-weight:700}
+.rec .stars{display:flex;gap:1.5px;margin-top:2px}
+.rec .stars svg{width:11px;height:11px}
+.tabbar{flex:none;border-top:2.5px solid var(--ink);background:var(--paper2);display:flex;padding:8px 6px 18px;position:relative;z-index:5}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:700}
+.tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--ink)}
+.tab.on svg{fill:var(--pri);stroke:var(--ink)}
+.tab .dotmark{height:4px;width:4px;border-radius:50%;background:transparent}
+.tab.on .dotmark{background:var(--pri-deep)}
+
+/* ---------- 4.2 数据统计 ---------- */
+.page-title{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 0}
+.page-title .t{font-family:"ZCOOL KuaiLe";font-size:21px}
+.page-title .chip{display:inline-flex;align-items:center;gap:5px;border:2px solid var(--ink);background:#fff;border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:800}
+.chart-card{padding:16px 14px 12px;margin-top:14px}
+.chart-card h4{font-size:13px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+.chart-card h4 .avg{font-family:"ZCOOL KuaiLe";color:var(--ok-deep);font-size:17px}
+.bars{display:flex;align-items:flex-end;gap:9px;height:118px;margin-top:14px;padding-top:8px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.bar-col .bv{font-size:10.5px;font-weight:900;color:var(--ink-soft)}
+.bar-col .bar{width:100%;border:2px solid var(--ink);border-radius:7px 7px 0 0;background:var(--pri-soft)}
+.bar-col .bar.mid{background:var(--pri)}
+.bar-col .bar.hot{background:var(--ok)}
+.bar-col .bl{font-size:10.5px;font-weight:800;color:var(--ink-soft)}
+.bar-col.today .bl{color:var(--ink);background:var(--pri);border-radius:6px;padding:1px 6px;border:1.5px solid var(--ink)}
+.master-card{padding:14px;margin-top:14px}
+.master-card h4{font-size:13px;font-weight:900;margin-bottom:12px}
+.mrow{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.mrow .kn{font-size:12px;font-weight:800;width:84px;flex:none}
+.mrow .track{flex:1;height:12px;border:2px solid var(--ink);border-radius:7px;background:#fff;overflow:hidden}
+.mrow .track i{display:block;height:100%;border-radius:0}
+.mrow .track i.hi{background:repeating-linear-gradient(-45deg,var(--ok) 0 6px,#54CE85 6px 12px)}
+.mrow .track i.mid{background:repeating-linear-gradient(-45deg,var(--pri) 0 6px,#FFC93D 6px 12px)}
+.mrow .track i.lo{background:repeating-linear-gradient(-45deg,var(--bad) 0 6px,#FF7A7A 6px 12px)}
+.mrow .pv{font-size:11px;font-weight:900;width:34px;text-align:right}
+.mrow .pv.hi{color:var(--ok-deep)}
+.mrow .pv.mid{color:var(--pri-deep)}
+.mrow .pv.lo{color:var(--bad-deep)}
+.streak{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#FFF3D0,#FFE9B8);border:2px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 rgba(43,43,43,.85);padding:12px 14px;margin-top:14px}
+.streak .fire{width:40px;height:40px;border:2px solid var(--ink);border-radius:12px;background:#fff;display:grid;place-items:center;flex:none}
+.streak .fire svg{width:22px;height:22px}
+.streak .txt b{font-size:14px}
+.streak .txt p{font-size:11px;color:var(--ink-soft);font-weight:600;margin-top:2px}
+.weak-list{margin-top:14px;padding:13px 14px}
+.weak-list h4{font-size:13px;font-weight:900;margin-bottom:9px;color:var(--bad-deep)}
+.weak-list li{list-style:none;font-size:12px;font-weight:600;line-height:1.6;padding:6px 8px;background:var(--bad-soft);border:1.5px dashed var(--bad);border-radius:9px;margin-bottom:7px}
+
+/* ---------- 4.3 报告库 ---------- */
+.rptcard{background:#fff;border:2px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 rgba(43,43,43,.85);padding:14px;margin-top:14px;position:relative}
+.rptcard .rc-head{display:flex;align-items:center;gap:10px}
+.rptcard .rc-topic{font-size:14px;font-weight:900}
+.rptcard .rc-date{font-size:11px;color:var(--ink-soft);font-weight:700;margin-top:2px}
+.mini-donut{margin-left:auto;width:52px;height:52px;border-radius:50%;border:2.5px solid var(--ink);position:relative;flex:none;background:conic-gradient(var(--ok) 0 80%, var(--line) 80% 100%)}
+.mini-donut::after{content:"";position:absolute;inset:7px;background:#fff;border-radius:50%;border:2px solid var(--ink)}
+.mini-donut span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"ZCOOL KuaiLe";font-size:14px;color:var(--ok-deep);z-index:2;line-height:1}
+.mini-donut.mid{background:conic-gradient(var(--pri) 0 60%, var(--line) 60% 100%)}
+.mini-donut.mid span{color:var(--pri-deep)}
+.mini-donut.low{background:conic-gradient(var(--bad) 0 40%, var(--line) 40% 100%)}
+.mini-donut.low span{color:var(--bad-deep)}
+.rptcard .snippet{margin-top:10px;font-size:11.5px;line-height:1.7;color:var(--ink-soft);font-weight:600;background:var(--paper2);border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px}
+.rptcard .rc-foot{display:flex;align-items:center;gap:8px;margin-top:11px}
+.rptcard .rc-foot .btn{flex:1;padding:8px;font-size:12.5px}
+.rptcard .rc-foot .share{width:36px;height:36px;border:2px solid var(--ink);border-radius:10px;background:#fff;box-shadow:0 2px 0 var(--ink);display:grid;place-items:center;flex:none}
+.empty-note{margin-top:16px;text-align:center;font-size:11.5px;color:var(--ink-soft);font-weight:600}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="file-head">
+  <h1 class="font-display"><span class="badge">文件 04</span>个人学习后台</h1>
+  <p class="sub">长期价值承载：学习记录、数据统计、历史报告库，把每次闯关沉淀成「看得见的成长档案」。</p>
+  <div class="legend">
+    <span class="note">要点 →</span>
+    <span class="dot"><i class="sw" style="background:#FFB300"></i>主色 #FFB300</span>
+    <span class="dot"><i class="sw" style="background:#3DBE6B"></i>高掌握 ≥80%</span>
+    <span class="dot"><i class="sw" style="background:#F04F4F"></i>薄弱 &lt;60%</span>
+    <span class="note">｜ 「我的」Tab 激活态 · 图表全部漫画勾线风格 · 家长看报告、学生看成长，两类视角都友好</span>
+  </div>
+</header>
+
+<main class="frames">
+
+  <!-- ============ 4.1 学习记录列表 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:50</span><span style="font-size:11px;color:var(--ink-soft)">我的学习档案</span></div>
+        <div class="sbody">
+          <div class="profile">
+            <div class="avatar">
+              <i class="hair h1"></i><i class="hair h2"></i><i class="eye l"></i><i class="eye r"></i><i class="blush l"></i><i class="blush r"></i><i class="mouth"></i>
+            </div>
+            <div>
+              <div class="name">小闯同学<small>六年级 · 爱科学</small></div>
+              <div class="lvl">
+                <span class="chip">Lv.6 闯关小达人</span>
+                <span class="xpbar"><i></i></span>
+                <span class="xpt">320/520</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="week-stats">
+            <div class="wstat"><div class="v">5</div><div class="k">本周闯关</div></div>
+            <div class="wstat"><div class="v">82%</div><div class="k">平均正确率</div></div>
+            <div class="wstat"><div class="v">320</div><div class="k">累计⭐</div></div>
+          </div>
+
+          <div class="filter"><span class="f on">全部</span><span class="f">最近 7 天</span><span class="f">本月</span></div>
+
+          <div class="rec">
+            <span class="ic" style="background:#FFF3C2">🌱</span>
+            <div><div class="t">光合作用</div><div class="d">今天 9:48 · 5 题 · 3 分 12 秒</div></div>
+            <div class="acc"><div class="p g">80%</div><div class="s">正确率</div>
+              <div class="stars">
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="rec">
+            <span class="ic" style="background:#FFE1D6">🌋</span>
+            <div><div class="t">火山为什么会喷发</div><div class="d">昨天 19:02 · 5 题 · 5 分 40 秒</div></div>
+            <div class="acc"><div class="p y">60%</div><div class="s">正确率</div>
+              <div class="stars">
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="rec">
+            <span class="ic" style="background:#DCEBFF">🧲</span>
+            <div><div class="t">磁铁的秘密</div><div class="d">3 天前 16:20 · 3 题 · 2 分 01 秒</div></div>
+            <div class="acc"><div class="p g">100%</div><div class="s">正确率</div>
+              <div class="stars">
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="rec">
+            <span class="ic" style="background:#E8E0FF">🌍</span>
+            <div><div class="t">地球的公转</div><div class="d">6 天前 20:31 · 5 题 · 4 分 55 秒</div></div>
+            <div class="acc"><div class="p r">40%</div><div class="s">正确率</div>
+              <div class="stars">
+                <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="#FFC93D" stroke="#2B2B2B" stroke-width="1.4"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-note">下拉加载更早的记录 · 共 12 次闯关</div>
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span><i class="dotmark"></i></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg><span>闯关</span><i class="dotmark"></i></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 20v-9M10 20V4M16 20v-6"/><path d="M1 20h22"/></svg><span>报告</span><i class="dotmark"></i></div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>我的</span><i class="dotmark"></i></div>
+        </nav>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">1</span>学习记录列表</h3>
+      <ul>
+        <li>档案页顶部：吉祥物头像 + 昵称 + 等级徽章 + XP 进度条，成长感一目了然</li>
+        <li>正确率按分数分色（绿 ≥80 / 黄 60-79 / 红 &lt;60），星级与成绩对应，家长扫一眼就懂</li>
+        <li>筛选（全部/7天/本月）+ 记录卡片含主题图标、题数、用时，信息密度适中不压迫</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+  <!-- ============ 4.2 数据统计 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:51</span><span style="font-size:11px;color:var(--ink-soft)">学习数据 · 近 7 天</span></div>
+        <div class="sbody">
+          <div class="page-title">
+            <span class="t">📈 学习统计</span>
+            <span class="chip">近 7 天 ▾</span>
+          </div>
+
+          <div class="chart-card card">
+            <h4>每日闯关正确率 <span class="avg">平均 78%</span></h4>
+            <div class="bars">
+              <div class="bar-col"><span class="bv">100</span><span class="bar hot" style="height:72px"></span><span class="bl">一</span></div>
+              <div class="bar-col"><span class="bv">60</span><span class="bar mid" style="height:44px"></span><span class="bl">二</span></div>
+              <div class="bar-col"><span class="bv">80</span><span class="bar hot" style="height:58px"></span><span class="bl">三</span></div>
+              <div class="bar-col"><span class="bv">40</span><span class="bar" style="height:30px"></span><span class="bl">四</span></div>
+              <div class="bar-col"><span class="bv">100</span><span class="bar hot" style="height:72px"></span><span class="bl">五</span></div>
+              <div class="bar-col"><span class="bv">80</span><span class="bar hot" style="height:58px"></span><span class="bl">六</span></div>
+              <div class="bar-col today"><span class="bv">100</span><span class="bar hot" style="height:72px"></span><span class="bl">日</span></div>
+            </div>
+          </div>
+
+          <div class="master-card card">
+            <h4>知识点掌握度</h4>
+            <div class="mrow"><span class="kn">光合作用场所</span><span class="track"><i class="hi" style="width:100%"></i></span><span class="pv hi">100%</span></div>
+            <div class="mrow"><span class="kn">光合作用条件</span><span class="track"><i class="hi" style="width:80%"></i></span><span class="pv hi">80%</span></div>
+            <div class="mrow"><span class="kn">磁铁磁性</span><span class="track"><i class="hi" style="width:100%"></i></span><span class="pv hi">100%</span></div>
+            <div class="mrow"><span class="kn">产物与原料</span><span class="track"><i class="mid" style="width:60%"></i></span><span class="pv mid">60%</span></div>
+            <div class="mrow"><span class="kn">昼夜与季节</span><span class="track"><i class="lo" style="width:40%"></i></span><span class="pv lo">40%</span></div>
+          </div>
+
+          <div class="streak">
+            <span class="fire"><svg viewBox="0 0 24 24"><path d="M12 2c1 4-3 5-3 9a3.5 3.5 0 0 0 7 0c0-1.5-.5-2.5-1-3.5 2 1 3 3 3 5.5a6 6 0 0 1-12 0C6 8 10 6 12 2z" fill="#FFB300" stroke="#2B2B2B" stroke-width="1.4"/></svg></span>
+            <div class="txt"><b>连续学习 5 天 🔥</b><p>再坚持 2 天就能解锁「七日之星」徽章！</p></div>
+          </div>
+
+          <div class="weak-list card">
+            <h4>⚠️ 需要回炉的知识点</h4>
+            <ul>
+              <li>「昼夜与季节」—— 建议再闯一次《地球的公转》</li>
+              <li>「产物与原料」—— 明天再来一次光合作用，冲 100%</li>
+            </ul>
+          </div>
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span><i class="dotmark"></i></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg><span>闯关</span><i class="dotmark"></i></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 20v-9M10 20V4M16 20v-6"/><path d="M1 20h22"/></svg><span>报告</span><i class="dotmark"></i></div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>我的</span><i class="dotmark"></i></div>
+        </nav>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">2</span>数据统计</h3>
+      <ul>
+        <li>7 日正确率柱状图：≥80 绿 / 60-79 黄 / &lt;60 浅黄，今日高亮，一眼看出进步曲线</li>
+        <li>知识点掌握度用「漫画斜纹进度条」+ 红黄绿三档，薄弱点自动生成「回炉」提醒</li>
+        <li>连续打卡火焰徽章给坚持正反馈；统计页同时服务学生（成长）与家长（效果）</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+  <!-- ============ 4.3 历史报告库 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:52</span><span style="font-size:11px;color:var(--ink-soft)">历史报告 · 随时复盘</span></div>
+        <div class="sbody">
+          <div class="page-title">
+            <span class="t">🗂️ 我的报告库</span>
+            <span class="tag" style="background:var(--pri-soft)">共 12 份</span>
+          </div>
+
+          <div class="rptcard">
+            <div class="rc-head">
+              <div><div class="rc-topic">光合作用</div><div class="rc-date">今天 9:48 · 5 题</div></div>
+              <div class="mini-donut"><span>80%</span></div>
+            </div>
+            <div class="snippet">「光合作用是植物用阳光+水+二氧化碳制造养料和氧气的过程……记住吸入 CO₂、放出 O₂，就抓住了最易错的一点。」</div>
+            <div class="rc-foot">
+              <button class="btn">📖 查看完整报告</button>
+              <span class="share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></span>
+            </div>
+          </div>
+
+          <div class="rptcard">
+            <div class="rc-head">
+              <div><div class="rc-topic">火山为什么会喷发</div><div class="rc-date">昨天 19:02 · 5 题</div></div>
+              <div class="mini-donut mid"><span>60%</span></div>
+            </div>
+            <div class="snippet">「地球内部的岩浆像一锅滚烫的汤，压力一大就从裂缝喷出来……岩浆通道、火山口，是火山的两大结构。」</div>
+            <div class="rc-foot">
+              <button class="btn ghost">📖 再次复习</button>
+              <span class="share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></span>
+            </div>
+          </div>
+
+          <div class="rptcard">
+            <div class="rc-head">
+              <div><div class="rc-topic">地球的公转</div><div class="rc-date">6 天前 20:31 · 5 题</div></div>
+              <div class="mini-donut low"><span>40%</span></div>
+            </div>
+            <div class="snippet">「地球斜着身子绕太阳转，才有了四季……昼夜是自转，四季是公转，千万别记混啦。」</div>
+            <div class="rc-foot">
+              <button class="btn">🎯 重闯这一关</button>
+              <span class="share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></span>
+            </div>
+          </div>
+
+          <div class="empty-note">下拉加载更早的报告</div>
+        </div>
+        <nav class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg><span>首页</span><i class="dotmark"></i></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg><span>闯关</span><i class="dotmark"></i></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 20v-9M10 20V4M16 20v-6"/><path d="M1 20h22"/></svg><span>报告</span><i class="dotmark"></i></div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>我的</span><i class="dotmark"></i></div>
+        </nav>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">3</span>历史报告库</h3>
+      <ul>
+        <li>报告卡片 = 主题 + 时间 + 迷你环形正确率 + 三句总结摘要，形成「轻量知识档案」</li>
+        <li>按成绩给出不同动作：低分显示「重闯这一关」、中分「再次复习」、高分「查看报告」</li>
+        <li>每份报告可一键再分享，强化社交传播；下拉加载更早记录</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+</main>
+</body>
+</html>

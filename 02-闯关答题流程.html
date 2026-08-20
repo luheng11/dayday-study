@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 · 闯关答题流程 — AI 闯关学堂原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+/* ============ 设计系统（轻漫画风 · 校园闯关手账） ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#FFF9EC; --paper2:#FBF0D8; --desk:#F2E7CE;
+  --ink:#2B2B2B; --ink-soft:#8B8170;
+  --pri:#FFB300; --pri-deep:#E29C00; --pri-soft:#FFE9B8;
+  --ok:#3DBE6B; --ok-deep:#2C9454; --ok-soft:#E4F7EC;
+  --bad:#F04F4F; --bad-deep:#CF3F3F; --bad-soft:#FCE8E8;
+  --info:#4A90E2; --info-deep:#3473C4;
+  --line:#EFE2C2;
+  --skin:#FFE3C0;
+}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  color:var(--ink);
+  background:radial-gradient(circle at 1px 1px, rgba(43,43,43,.045) 1px, transparent 0) 0 0/24px 24px, var(--desk);
+  min-height:100vh; padding:40px 24px 80px;
+}
+.font-display{font-family:"ZCOOL KuaiLe","PingFang SC","Microsoft YaHei",sans-serif; letter-spacing:.5px}
+
+.file-head{max-width:1280px;margin:0 auto 44px;background:var(--paper);border:2.5px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 rgba(43,43,43,.85);padding:26px 30px;position:relative;overflow:hidden}
+.file-head::after{content:"";position:absolute;right:-46px;top:-46px;width:150px;height:150px;border-radius:50%;background:repeating-conic-gradient(rgba(255,179,0,.14) 0 8deg, transparent 8deg 16deg)}
+.file-head h1{font-size:30px;position:relative;z-index:1}
+.file-head .sub{color:var(--ink-soft);font-size:14px;margin-top:6px;position:relative;z-index:1}
+.file-head .badge{display:inline-block;font-size:12px;font-weight:700;background:var(--pri);border:2px solid var(--ink);border-radius:8px;padding:2px 10px;margin-right:8px;transform:rotate(-2deg)}
+.legend{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;position:relative;z-index:1}
+.legend .dot{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.legend .sw{width:18px;height:18px;border-radius:6px;border:2px solid var(--ink);display:inline-block}
+.legend .note{font-size:12px;color:var(--ink-soft)}
+
+.frames{display:flex;flex-wrap:wrap;gap:56px 48px;justify-content:center;max-width:1420px;margin:0 auto}
+.frame-item{width:380px}
+.frame-item figcaption{background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 rgba(43,43,43,.85);margin-top:18px;padding:14px 16px}
+.frame-item figcaption h3{font-size:16px;display:flex;align-items:center;gap:8px}
+.frame-item figcaption .no{font-family:"ZCOOL KuaiLe";background:var(--pri);border:2px solid var(--ink);border-radius:8px;width:26px;height:26px;display:inline-grid;place-items:center;font-size:14px;flex:none}
+.frame-item figcaption ul{margin:8px 0 0 0;list-style:none}
+.frame-item figcaption li{font-size:12.5px;color:var(--ink-soft);padding-left:14px;position:relative;line-height:1.75}
+.frame-item figcaption li::before{content:"·";position:absolute;left:2px;font-weight:900;color:var(--pri-deep)}
+
+.phone{width:375px;height:812px;background:var(--paper);border:3.5px solid var(--ink);border-radius:46px;box-shadow:0 18px 40px rgba(43,43,43,.22), inset 0 0 0 3px #fff;margin:0 auto;position:relative;overflow:hidden}
+.screen{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.statusbar{height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:700}
+.sbody{flex:1;overflow:hidden;padding:0 18px 0;position:relative;display:flex;flex-direction:column}
+
+.btn{font-family:inherit;font-size:15px;font-weight:800;border:2px solid var(--ink);border-radius:14px;padding:12px 18px;background:var(--pri);color:var(--ink);box-shadow:0 4px 0 var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:transform .08s, box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+.btn.ghost{background:#fff}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.big{width:100%;font-size:16px;padding:14px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:2px solid var(--ink);background:#fff;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;border:1.5px solid var(--ink);background:var(--pri-soft)}
+
+/* ---------- 吉祥物「闯闯」 ---------- */
+.mascot{position:relative;width:72px;height:88px;flex:none}
+.mascot .head{position:absolute;top:0;left:50%;transform:translateX(-50%);width:62px;height:56px;background:var(--skin);border:2.5px solid var(--ink);border-radius:50% 50% 46% 46%;z-index:2}
+.mascot .hair{position:absolute;background:var(--ink);z-index:3;border-radius:8px}
+.mascot .hair.h1{width:13px;height:19px;top:-9px;left:11px;transform:rotate(-20deg)}
+.mascot .hair.h2{width:10px;height:15px;top:-7px;left:30px;transform:rotate(14deg)}
+.mascot .eye{position:absolute;width:8px;height:9.5px;background:var(--ink);border-radius:50%;top:24px;z-index:3}
+.mascot .eye::after{content:"";position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;top:2px;left:2px}
+.mascot .eye.l{left:17px}.mascot .eye.r{right:17px}
+.mascot .blush{position:absolute;width:9px;height:5px;background:rgba(240,79,79,.35);border-radius:50%;top:34px;z-index:3}
+.mascot .blush.l{left:9px}.mascot .blush.r{right:9px}
+.mascot .mouth{position:absolute;z-index:3;top:36px;left:50%;transform:translateX(-50%)}
+.mascot .mouth.smile{width:15px;height:8px;border:2.5px solid var(--ink);border-top:none;border-radius:0 0 14px 14px}
+.mascot .mouth.sad{width:15px;height:8px;border:2.5px solid var(--ink);border-bottom:none;border-radius:14px 14px 0 0;top:41px}
+.mascot .mouth.o{width:11px;height:11px;background:var(--ink);border-radius:50%;top:37px}
+.mascot .body{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:46px;height:29px;background:#fff;border:2.5px solid var(--ink);border-radius:12px 12px 14px 14px;z-index:1}
+.mascot .bow{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:17px;height:9px;background:var(--pri);border:2px solid var(--ink);border-radius:5px;z-index:4}
+.mascot .bow::after{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);width:6px;height:4px;background:var(--pri-deep);border:1.5px solid var(--ink);border-radius:3px}
+.mascot .arm{display:none;position:absolute;width:12px;height:12px;background:var(--skin);border:2.5px solid var(--ink);border-radius:50%;z-index:2}
+.mascot.cheer .arm{display:block;top:54px;animation:bob 1s ease-in-out infinite}
+.mascot.cheer .arm.l{left:1px}
+.mascot.cheer .arm.r{right:1px;animation-delay:.15s}
+.mascot.cheer .eye{width:9.5px;height:9.5px;top:22px}
+.mascot.cheer .mouth.smile{width:19px;height:10px;border-width:3px}
+.mascot.cheer{animation:hop .9s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes hop{0%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}60%{transform:translateY(0)}}
+@keyframes floatup{0%{opacity:0;transform:translateY(6px)}25%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}
+
+/* ---------- 闯关页组件 ---------- */
+.qtop{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px}
+.qback{width:34px;height:34px;border:2px solid var(--ink);border-radius:11px;background:#fff;display:grid;place-items:center;box-shadow:0 2px 0 var(--ink)}
+.qtop .qlevel{font-weight:800;font-size:14px}
+.qtop .qlevel b{font-family:"ZCOOL KuaiLe";color:var(--pri-deep);font-size:17px}
+.hearts{display:flex;gap:4px}
+.hearts svg{width:20px;height:20px}
+.hearts .lost{fill:#fff;stroke:var(--ink);stroke-width:1.6;stroke-dasharray:3 2}
+.segs{display:flex;gap:6px;margin-bottom:14px}
+.seg{flex:1;height:10px;border:2px solid var(--ink);border-radius:6px;background:#fff}
+.seg.done{background:var(--ok)}
+.seg.cur{background:var(--pri);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.qcard{background:#fff;border:2px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 rgba(43,43,43,.85);padding:16px 16px 14px;position:relative}
+.qcard .qmeta{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.qcard .qmeta .tag{background:#fff}
+.qcard .qmeta .kp{font-size:11px;color:var(--ink-soft);font-weight:600}
+.qcard .stem{font-size:16.5px;font-weight:800;line-height:1.55}
+.qnum{position:absolute;top:-14px;right:12px;font-family:"ZCOOL KuaiLe";background:var(--pri);border:2px solid var(--ink);border-radius:10px;padding:3px 12px;font-size:14px;box-shadow:0 2px 0 var(--ink);transform:rotate(2deg)}
+.opts{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.opt{display:flex;gap:11px;align-items:center;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px 13px;box-shadow:0 3px 0 rgba(43,43,43,.85)}
+.opt .key{width:27px;height:27px;border-radius:50%;background:var(--paper2);border:2px solid var(--ink);display:grid;place-items:center;font-weight:900;font-size:13px;flex:none}
+.opt .txt{font-size:14.5px;font-weight:700;line-height:1.45}
+.opt.correct{background:var(--ok-soft);border-color:var(--ok);box-shadow:0 3px 0 var(--ok-deep)}
+.opt.correct .key{background:var(--ok);color:#fff}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad);box-shadow:0 3px 0 var(--bad-deep)}
+.opt.wrong .key{background:var(--bad);color:#fff}
+.opt.dim{opacity:.55}
+.opt .mark{margin-left:auto;flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;border:2px solid var(--ink)}
+.opt.correct .mark{background:var(--ok)}
+.opt.wrong .mark{background:var(--bad)}
+.opt .cb{width:22px;height:22px;border:2px solid var(--ink);border-radius:6px;background:#fff;flex:none;display:grid;place-items:center;font-size:13px;font-weight:900}
+.opt.picked .cb{background:var(--pri);border-color:var(--ink)}
+.opt.correct .cb{background:var(--ok);color:#fff}
+.footer-actions{margin-top:auto;padding:16px 0 6px;position:relative}
+.xpfloat{position:absolute;right:16px;top:-4px;font-weight:900;color:var(--pri-deep);font-size:15px;border:2px solid var(--ink);background:#fff;border-radius:10px;padding:2px 9px;box-shadow:0 2px 0 var(--ink);animation:floatup 1.5s ease-out infinite;z-index:6}
+.hintline{text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:9px}
+
+/* ---------- 讲解气泡 ---------- */
+.feedback{margin-top:16px;display:flex;gap:10px;align-items:flex-start;position:relative;z-index:3}
+.feedback .say{position:relative;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px 13px;box-shadow:0 3px 0 rgba(43,43,43,.85);font-size:12.5px;line-height:1.65;flex:1}
+.feedback .say::before{content:"";position:absolute;left:-8px;top:20px;width:12px;height:12px;background:#fff;border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.feedback .say.ok::before{border-left-color:var(--ok);border-bottom-color:var(--ok)}
+.feedback .say.ok{border-color:var(--ok)}
+.feedback .say.bad::before{border-left-color:var(--bad);border-bottom-color:var(--bad)}
+.feedback .say.bad{border-color:var(--bad)}
+.feedback .say .ft{font-weight:900;font-size:13.5px;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.feedback .say.ok .ft{color:var(--ok-deep)}
+.feedback .say.bad .ft{color:var(--bad-deep)}
+.feedback .say .kp{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;border:1.5px solid var(--ink);background:var(--pri-soft)}
+.feedback .say b{color:var(--pri-deep)}
+.burst{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);width:330px;height:330px;border-radius:50%;background:repeating-conic-gradient(rgba(61,190,107,.14) 0 9deg, transparent 9deg 18deg);z-index:0;pointer-events:none}
+.burst.bad{background:repeating-conic-gradient(rgba(240,79,79,.10) 0 9deg, transparent 9deg 18deg)}
+
+/* ---------- 判断题 ---------- */
+.judge{display:flex;gap:14px;margin-top:18px}
+.judge .jbtn{flex:1;border:2px solid var(--ink);border-radius:16px;background:#fff;box-shadow:0 4px 0 var(--ink);padding:20px 0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.judge .jbtn .ic{width:52px;height:52px;border-radius:50%;border:2.5px solid var(--ink);display:grid;place-items:center;font-size:24px;font-weight:900}
+.judge .jbtn.true .ic{background:var(--ok);color:#fff}
+.judge .jbtn.false .ic{background:var(--bad);color:#fff}
+.judge .jbtn .lb{font-weight:800;font-size:13px}
+.judge .jbtn.ghosty{opacity:.55}
+.judge .jbtn.hover{border-width:3px;transform:translateY(-2px);box-shadow:0 6px 0 var(--ink)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="file-head">
+  <h1 class="font-display"><span class="badge">文件 02</span>闯关答题流程</h1>
+  <p class="sub">核心闭环第二步：答题与即时反馈。覆盖单选（未答/答对/答错）、多选、判断五种关键状态，反馈即讲解。</p>
+  <div class="legend">
+    <span class="note">状态色 →</span>
+    <span class="dot"><i class="sw" style="background:#FFB300"></i>主色 #FFB300</span>
+    <span class="dot"><i class="sw" style="background:#3DBE6B"></i>答对 #3DBE6B</span>
+    <span class="dot"><i class="sw" style="background:#F04F4F"></i>答错 #F04F4F</span>
+    <span class="dot"><i class="sw" style="background:#2B2B2B"></i>墨黑 #2B2B2B</span>
+    <span class="note">｜ 顶栏：返回 + 第几关 + ❤ 生命值 · 分段进度条像「漫画格子」· 讲解一律用对话气泡</span>
+  </div>
+</header>
+
+<main class="frames">
+
+  <!-- ============ 2.1 单选题 · 未作答 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:43</span><span style="font-size:11px;color:var(--ink-soft)">光合作用 · 闯关中</span></div>
+        <div class="sbody">
+          <div class="qtop">
+            <span class="qback"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
+            <span class="qlevel">第 <b>2</b> / 5 关</span>
+            <span class="hearts">
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+            </span>
+          </div>
+          <div class="segs"><span class="seg done"></span><span class="seg cur"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+
+          <div class="qcard">
+            <span class="qnum">Q2</span>
+            <div class="qmeta"><span class="tag" style="background:var(--pri-soft)">单选题</span><span class="kp">知识点：光合作用场所</span></div>
+            <div class="stem">光合作用主要发生在植物细胞的哪个部位？</div>
+          </div>
+
+          <div class="opts">
+            <div class="opt"><span class="key">A</span><span class="txt">叶绿体</span></div>
+            <div class="opt"><span class="key">B</span><span class="txt">线粒体</span></div>
+            <div class="opt"><span class="key">C</span><span class="txt">细胞核</span></div>
+            <div class="opt"><span class="key">D</span><span class="txt">液泡</span></div>
+          </div>
+
+          <div class="footer-actions">
+            <button class="btn big" style="opacity:.45">选好答案，点击提交</button>
+            <div class="hintline">选择后立即判分，答对答错都有讲解哦</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">1</span>单选题 · 未作答</h3>
+      <ul>
+        <li>顶栏信息：返回 / 第 2/5 关 / 3 颗❤生命值，进度条 5 格像漫画格，第 1 格已过(绿)、当前格闪烁(黄)</li>
+        <li>题干卡片右上角「Q2」号码角标像漫画页码；题型与知识点标签先给语境</li>
+        <li>选项 A–D 大圆角按钮带硬阴影，未选择时提交按钮半透明（防误触）</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+  <!-- ============ 2.2 单选题 · 答对反馈 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:43</span><span style="font-size:11px;color:var(--ink-soft)">光合作用 · 闯关中</span></div>
+        <div class="sbody">
+          <div class="burst"></div>
+          <div class="qtop">
+            <span class="qback"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
+            <span class="qlevel">第 <b>2</b> / 5 关</span>
+            <span class="hearts">
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+            </span>
+          </div>
+          <div class="segs"><span class="seg done"></span><span class="seg cur"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+
+          <div class="qcard">
+            <span class="qnum">Q2</span>
+            <div class="qmeta"><span class="tag" style="background:var(--pri-soft)">单选题</span><span class="kp">知识点：光合作用场所</span></div>
+            <div class="stem">光合作用主要发生在植物细胞的哪个部位？</div>
+          </div>
+
+          <div class="opts">
+            <div class="opt correct"><span class="key">A</span><span class="txt">叶绿体</span><span class="mark">✓</span></div>
+            <div class="opt dim"><span class="key">B</span><span class="txt">线粒体</span></div>
+            <div class="opt dim"><span class="key">C</span><span class="txt">细胞核</span></div>
+            <div class="opt dim"><span class="key">D</span><span class="txt">液泡</span></div>
+          </div>
+
+          <div class="feedback">
+            <div class="mascot cheer">
+              <div class="head"><i class="hair h1"></i><i class="hair h2"></i><i class="eye l"></i><i class="eye r"></i><i class="blush l"></i><i class="blush r"></i><i class="mouth smile"></i></div>
+              <div class="body"><i class="bow"></i></div>
+              <i class="arm l"></i><i class="arm r"></i>
+            </div>
+            <div class="say ok">
+              <div class="ft">叮！答对啦 🎉</div>
+              太棒了！叶绿体是植物细胞的「能量工厂」，光合作用就在这里进行，把阳光变成糖分。
+              <div><span class="kp">📌 记牢：叶绿体 = 光合作用的场所</span></div>
+            </div>
+          </div>
+
+          <div class="footer-actions">
+            <div class="xpfloat">⭐ +10</div>
+            <button class="btn big ok">下一关 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">2</span>单选题 · 答对反馈</h3>
+      <ul>
+        <li>即时反馈三件套：选项变绿打勾 + 绿色集中线氛围 + 吉祥物举手欢呼（原地弹跳）</li>
+        <li>讲解用「对话气泡」从吉祥物口中说出，口语化 + 知识点速记标签，不是干巴巴的解析</li>
+        <li>右上角「⭐+10」浮动得分动画，即时强化闯关奖励感</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+  <!-- ============ 2.3 单选题 · 答错反馈 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:44</span><span style="font-size:11px;color:var(--ink-soft)">光合作用 · 闯关中</span></div>
+        <div class="sbody">
+          <div class="burst bad"></div>
+          <div class="qtop">
+            <span class="qback"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
+            <span class="qlevel">第 <b>3</b> / 5 关</span>
+            <span class="hearts">
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg class="lost" viewBox="0 0 24 24"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+            </span>
+          </div>
+          <div class="segs"><span class="seg done"></span><span class="seg done"></span><span class="seg cur"></span><span class="seg"></span><span class="seg"></span></div>
+
+          <div class="qcard">
+            <span class="qnum">Q3</span>
+            <div class="qmeta"><span class="tag" style="background:var(--pri-soft)">单选题</span><span class="kp">知识点：光合作用产物</span></div>
+            <div class="stem">光合作用释放到空气中的气体是？</div>
+          </div>
+
+          <div class="opts">
+            <div class="opt wrong"><span class="key">A</span><span class="txt">二氧化碳</span><span class="mark">✗</span></div>
+            <div class="opt correct"><span class="key">B</span><span class="txt">氧气</span><span class="mark">✓</span></div>
+            <div class="opt dim"><span class="key">C</span><span class="txt">氮气</span></div>
+            <div class="opt dim"><span class="key">D</span><span class="txt">水蒸气</span></div>
+          </div>
+
+          <div class="feedback">
+            <div class="mascot">
+              <div class="head"><i class="hair h1"></i><i class="hair h2"></i><i class="eye l"></i><i class="eye r"></i><i class="blush l"></i><i class="blush r"></i><i class="mouth smile"></i></div>
+              <div class="body"><i class="bow"></i></div>
+              <i class="arm l"></i><i class="arm r"></i>
+            </div>
+            <div class="say bad">
+              <div class="ft">哎呀，差一点点！</div>
+              别灰心～二氧化碳是植物<b>吸入</b>的原料，光合作用<b>放出</b>的是氧气。这次记住，下次就难不倒你啦！
+              <div><span class="kp">📌 易错点：吸入 CO₂，放出 O₂</span></div>
+            </div>
+          </div>
+
+          <div class="footer-actions">
+            <button class="btn big">下一关 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">3</span>单选题 · 答错反馈</h3>
+      <ul>
+        <li>答错也有完整讲解：选错的标红 ✗，正确答案标绿 ✓，一屏看懂「错在哪、对是什么」</li>
+        <li>损失 1 颗❤（变空心虚线），但吉祥物保持微笑鼓励——错误是学习机会，不惩罚</li>
+        <li>讲解突出「易错点对比」（吸入 CO₂ / 放出 O₂），并给记忆锚点标签</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+  <!-- ============ 2.4 多选题 · 作答后 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:45</span><span style="font-size:11px;color:var(--ink-soft)">光合作用 · 闯关中</span></div>
+        <div class="sbody">
+          <div class="burst"></div>
+          <div class="qtop">
+            <span class="qback"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
+            <span class="qlevel">第 <b>4</b> / 5 关</span>
+            <span class="hearts">
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg class="lost" viewBox="0 0 24 24"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+            </span>
+          </div>
+          <div class="segs"><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg cur"></span><span class="seg"></span></div>
+
+          <div class="qcard">
+            <span class="qnum">Q4</span>
+            <div class="qmeta"><span class="tag" style="background:#E4F0FF">多选题</span><span class="kp">知识点：光合作用的条件</span></div>
+            <div class="stem">以下哪些是光合作用需要的条件？（可多选）</div>
+          </div>
+
+          <div class="opts">
+            <div class="opt correct"><span class="cb">✓</span><span class="txt">阳光</span><span class="mark">✓</span></div>
+            <div class="opt correct"><span class="cb">✓</span><span class="txt">水</span><span class="mark">✓</span></div>
+            <div class="opt correct"><span class="cb">✓</span><span class="txt">二氧化碳</span><span class="mark">✓</span></div>
+            <div class="opt dim"><span class="cb"></span><span class="txt">氧气（这是产物，不是条件）</span></div>
+          </div>
+
+          <div class="feedback">
+            <div class="mascot cheer">
+              <div class="head"><i class="hair h1"></i><i class="hair h2"></i><i class="eye l"></i><i class="eye r"></i><i class="blush l"></i><i class="blush r"></i><i class="mouth smile"></i></div>
+              <div class="body"><i class="bow"></i></div>
+              <i class="arm l"></i><i class="arm r"></i>
+            </div>
+            <div class="say ok">
+              <div class="ft">全选对啦！三样一个不少 ✨</div>
+              光合作用的「三件套」：<b>阳光 + 水 + 二氧化碳</b>，才能造出氧气和养料。氧气是<b>结果</b>，不是条件哦！
+              <div><span class="kp">📌 公式：光 + H₂O + CO₂ → O₂ + 糖</span></div>
+            </div>
+          </div>
+
+          <div class="footer-actions">
+            <div class="xpfloat">⭐ +15</div>
+            <button class="btn big ok">最后一关 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">4</span>多选题 · 作答后</h3>
+      <ul>
+        <li>多选用「方框勾选」与单选「圆圈」区分，选中态黄橙填充、正确态变绿打勾</li>
+        <li>干扰项（氧气）在讲解里点破「它是结果不是条件」，利用错误选项做教学</li>
+        <li>多选题奖励更高（+15 星），难度与回报挂钩</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+  <!-- ============ 2.5 判断题 · 未作答 ============ -->
+  <figure class="frame-item">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:46</span><span style="font-size:11px;color:var(--ink-soft)">光合作用 · 闯关中</span></div>
+        <div class="sbody">
+          <div class="qtop">
+            <span class="qback"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
+            <span class="qlevel">第 <b>5</b> / 5 关</span>
+            <span class="hearts">
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#F04F4F" stroke="#2B2B2B" stroke-width="1.6"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+              <svg class="lost" viewBox="0 0 24 24"><path d="M12 20s-7-4.6-9-9a5 5 0 0 1 9-2.8A5 5 0 0 1 21 11c-2 4.4-9 9-9 9z"/></svg>
+            </span>
+          </div>
+          <div class="segs"><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg cur"></span></div>
+
+          <div class="qcard" style="text-align:center;padding-top:34px;padding-bottom:34px">
+            <span class="qnum">Q5</span>
+            <div class="qmeta" style="justify-content:center"><span class="tag" style="background:#FFE9D6">判断题</span><span class="kp">知识点：光合作用与昼夜</span></div>
+            <div class="stem" style="font-size:17px">「植物在夜晚也会进行光合作用。」<br>这句话对吗？</div>
+            <div style="margin-top:14px;font-size:12px;color:var(--ink-soft);font-weight:600">✋ 想一想：没有光，光合作用还发生吗？</div>
+          </div>
+
+          <div class="judge">
+            <div class="jbtn true"><span class="ic">✓</span><span class="lb">对 · 正确</span></div>
+            <div class="jbtn false"><span class="ic">✗</span><span class="lb">错 · 不对</span></div>
+          </div>
+
+          <div class="footer-actions">
+            <button class="btn big" style="opacity:.45">选好答案，点击提交</button>
+            <div class="hintline">最后一关！答完就能看到通关报告 🎁</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h3><span class="no">5</span>判断题 · 未作答</h3>
+      <ul>
+        <li>判断题用 Kahoot 式「双大按钮」：绿✓对 / 红✗错，一眼辨识、拇指友好</li>
+        <li>题干下方给「想一想」提示，引导先思考再作答，强化严肃学习属性</li>
+        <li>最后一关给奖励预告（通关报告），拉高完成率</li>
+      </ul>
+    </figcaption>
+  </figure>
+
+</main>
+</body>
+</html>
