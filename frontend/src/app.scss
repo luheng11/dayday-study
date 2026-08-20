@@ -1,0 +1,50 @@
+/* ============================================================
+   设计系统：轻漫画风 · 校园闯关手账（严格对齐 UI 原型 01–04）
+   令牌来源：原型 :root 设计令牌（文件 01–05 头部 legend）
+   ============================================================ */
+page {
+  /* 色彩令牌 */
+  --paper: #fff9ec;
+  --paper2: #fbf0d8;
+  --desk: #f2e7ce;
+  --ink: #2b2b2b;
+  --ink-soft: #8b8170;
+  --pri: #ffb300;
+  --pri-deep: #e29c00;
+  --pri-soft: #ffe9b8;
+  --ok: #3dbe6b;
+  --ok-deep: #2c9454;
+  --ok-soft: #e4f7ec;
+  --bad: #f04f4f;
+  --bad-deep: #cf3f3f;
+  --bad-soft: #fce8e8;
+  --info: #4a90e2;
+  --info-deep: #3473c4;
+  --info-soft: #e4f0ff;
+  --line: #efe2c2;
+  --skin: #ffe3c0;
+
+  /* 页面底色：漫画纸白 + 点阵（对应原型 body 的 radial 点阵 + desk 色） */
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+/* 标题字体（站酷快乐体），加载失败回退系统字体 */
+.font-display {
+  font-family: 'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  letter-spacing: 1rpx;
+}
+
+/* 桌面点阵铺底（用在 page 容器内层） */
+.desk-dots {
+  background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(43, 43, 43, 0.045) 1px,
+      transparent 0
+    ),
+    linear-gradient(var(--paper), var(--paper));
+  background-size: 24px 24px, 100% 100%;
+}
