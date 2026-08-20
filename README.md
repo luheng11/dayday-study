@@ -118,7 +118,7 @@ npm run dev:weapp                # 编译到 dist/ 并监听
 
 ### 已知说明
 
-- **标题字体**：站酷快乐体通过 `wx.loadFontFace` 从 jsDelivr CDN 加载，加载失败自动回退系统字体（不影响功能）；正式上线需将该字体文件放入合法域名/本地包
+- **标题字体**：`font-display` 类当前回退为系统粗体（未加载站酷快乐体）。原因：`wx.loadFontFace` 网络字体源会触发基础库的异步域名安全检查，域名未加入小程序 request 合法域名时控制台报 `webapi_getwxaasyncsecinfo:fail`。Phase 9 两种正式方案：① 字体文件放已备案 CDN + 加入合法域名白名单；② 字体子集化后以 base64 data URI 本地加载（免域名检查）
 - **图标**：`tools/gen-icons.mjs` 将 SVG 栅格化为 PNG（≤2KB 会被 webpack 内联为 base64，属正常现象）
 - **npm 安装**：Taro 4.1.11 在 npm 11 下需 `--legacy-peer-deps`（peer 依赖校验变严所致）
 
