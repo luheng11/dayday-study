@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 4096
     llm_max_attempts: int = 3  # 1 次主调用 + 2 次重试
 
+    # Mock 模式：无 DeepSeek Key 时用内置题库演示完整闭环（联调/验收用）
+    llm_mock: bool = False
+
     # App
     app_host: str = "0.0.0.0"
     app_port: int = 8000

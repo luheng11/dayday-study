@@ -10,6 +10,7 @@ from app.core.exceptions import (
     QuizGenerationError,
     TaskNotFoundError,
 )
+from app.llm.mock_data import build_mock_quiz
 from app.llm.quiz_chain import generate_quiz
 from app.models.quiz import (
     QuizGenerateRequest,
@@ -36,12 +37,22 @@ def _new_task_id() -> str:
 
 async def _run_generation(req: QuizGenerateRequest) -> QuizGenerateResponse:
     """核心生成流程（同步/异步共用）"""
-    quiz_output = await generate_quiz(
-        user_input=req.user_input,
-        question_count=req.question_count,
-        difficulty=req.difficulty,
-        model=llm_model,
-    )
+    from app.core.config import get_settings
+
+    if llm_model is None and get_settings().llm_mock:
+        # Mock 模式：无 Key 联调/演示用内置题库
+        quiz_output = build_mock_quiz(
+            user_input=req.user_input,
+            question_count=req.question_count,
+            difficulty=req.difficulty,
+        )
+    else:
+        quiz_output = await generate_quiz(
+            user_input=req.user_input,
+            question_count=req.question_count,
+            difficulty=req.difficulty,
+            model=llm_model,
+        )
     return QuizGenerateResponse(
         quiz_id=_new_quiz_id(),
         title=quiz_output.title,

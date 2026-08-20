@@ -1,0 +1,250 @@
+/* 吉祥物「闯闯」：原型文件 01 的 mascot 结构（基准 172x204rpx = 86x102px @750 设计稿）
+   数值 = 原型 px × 2（rpx），内部用 transform scale 做缩放 */
+
+.mascot-wrap {
+  position: relative;
+  flex: none;
+  display: inline-block;
+}
+
+.mascot {
+  position: relative;
+  width: 172rpx;
+  height: 204rpx;
+}
+
+.mascot .head {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 148rpx;
+  height: 132rpx;
+  background: var(--skin, #ffe3c0);
+  border: 5rpx solid var(--ink, #2b2b2b);
+  border-radius: 50% 50% 46% 46%;
+  z-index: 2;
+}
+.mascot .hair {
+  position: absolute;
+  background: var(--ink, #2b2b2b);
+  z-index: 3;
+  border-radius: 16rpx;
+}
+.mascot .hair.h1 {
+  width: 30rpx;
+  height: 44rpx;
+  top: -20rpx;
+  left: 26rpx;
+  transform: rotate(-20deg);
+}
+.mascot .hair.h2 {
+  width: 24rpx;
+  height: 34rpx;
+  top: -16rpx;
+  left: 72rpx;
+  transform: rotate(14deg);
+}
+.mascot .eye {
+  position: absolute;
+  width: 18rpx;
+  height: 22rpx;
+  background: var(--ink, #2b2b2b);
+  border-radius: 50%;
+  top: 56rpx;
+  z-index: 3;
+}
+.mascot .eye::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 6rpx;
+  background: #fff;
+  border-radius: 50%;
+  top: 4rpx;
+  left: 4rpx;
+}
+.mascot .eye.l {
+  left: 42rpx;
+}
+.mascot .eye.r {
+  right: 42rpx;
+}
+.mascot .blush {
+  position: absolute;
+  width: 22rpx;
+  height: 12rpx;
+  background: rgba(240, 79, 79, 0.35);
+  border-radius: 50%;
+  top: 80rpx;
+  z-index: 3;
+}
+.mascot .blush.l {
+  left: 22rpx;
+}
+.mascot .blush.r {
+  right: 22rpx;
+}
+.mascot .mouth {
+  position: absolute;
+  z-index: 3;
+  top: 84rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* 默认微笑 */
+.mascot .mouth {
+  width: 36rpx;
+  height: 18rpx;
+  border: 5rpx solid var(--ink, #2b2b2b);
+  border-top: none;
+  border-radius: 0 0 32rpx 32rpx;
+}
+.mascot.sad .mouth {
+  width: 36rpx;
+  height: 18rpx;
+  border: 5rpx solid var(--ink, #2b2b2b);
+  border-bottom: none;
+  border-radius: 32rpx 32rpx 0 0;
+  top: 96rpx;
+}
+.mascot.think .mouth {
+  width: 26rpx;
+  height: 26rpx;
+  background: var(--ink, #2b2b2b);
+  border: none;
+  border-radius: 50%;
+  top: 88rpx;
+}
+.mascot .tear {
+  display: none;
+  position: absolute;
+  width: 14rpx;
+  height: 18rpx;
+  background: var(--info, #4a90e2);
+  border: 3rpx solid var(--ink, #2b2b2b);
+  border-radius: 50% 50% 60% 60%;
+  top: 92rpx;
+  right: 38rpx;
+  z-index: 4;
+}
+.mascot.sad .tear {
+  display: block;
+}
+.mascot .body {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 108rpx;
+  height: 68rpx;
+  background: #fff;
+  border: 5rpx solid var(--ink, #2b2b2b);
+  border-radius: 28rpx 28rpx 32rpx 32rpx;
+  z-index: 1;
+}
+.mascot .bow {
+  position: absolute;
+  top: 10rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40rpx;
+  height: 22rpx;
+  background: var(--pri, #ffb300);
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 12rpx;
+  z-index: 4;
+}
+.mascot .bow::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 2rpx;
+  transform: translateX(-50%);
+  width: 14rpx;
+  height: 10rpx;
+  background: var(--pri-deep, #e29c00);
+  border: 3rpx solid var(--ink, #2b2b2b);
+  border-radius: 6rpx;
+}
+.mascot .arm {
+  display: none;
+  position: absolute;
+  width: 28rpx;
+  height: 28rpx;
+  background: var(--skin, #ffe3c0);
+  border: 5rpx solid var(--ink, #2b2b2b);
+  border-radius: 50%;
+  z-index: 2;
+}
+.mascot.cheer .arm {
+  display: block;
+  top: 128rpx;
+  animation: mascot-bob 1s ease-in-out infinite;
+}
+.mascot.cheer .arm.l {
+  left: 4rpx;
+}
+.mascot.cheer .arm.r {
+  right: 4rpx;
+  animation-delay: 0.15s;
+}
+.mascot.cheer .eye {
+  width: 22rpx;
+  height: 22rpx;
+  top: 52rpx;
+}
+.mascot.cheer .mouth {
+  width: 44rpx;
+  height: 24rpx;
+  border-width: 6rpx;
+}
+.mascot.cheer {
+  animation: mascot-hop 0.9s ease-in-out infinite;
+}
+.mascot.think .eye {
+  width: 14rpx;
+  height: 14rpx;
+  top: 52rpx;
+}
+.mascot.think .eye.l {
+  left: 40rpx;
+}
+.mascot.think .eye.r {
+  right: 54rpx;
+}
+
+.floaty {
+  animation: mascot-floaty 2.6s ease-in-out infinite;
+}
+
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8rpx);
+  }
+}
+@keyframes mascot-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10rpx);
+  }
+  60% {
+    transform: translateY(0);
+  }
+}
+@keyframes mascot-floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14rpx);
+  }
+}

@@ -1,3 +1,36 @@
 .page {
-  padding: 40rpx;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper, #fff9ec);
+  overflow: hidden;
+}
+
+.sbody {
+  flex: 1;
+  overflow: hidden;
+  height: 0;
+}
+
+.sbody-inner {
+  padding: 12rpx 36rpx 40rpx;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 180rpx;
+}
+.empty-title {
+  margin-top: 40rpx;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+.empty-desc {
+  margin-top: 16rpx;
+  text-align: center;
+  font-size: 25rpx;
+  color: var(--ink-soft, #8b8170);
+  line-height: 1.7;
 }

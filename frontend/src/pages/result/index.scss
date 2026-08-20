@@ -1,3 +1,222 @@
+/* 通关结算页（原型 03-1）：数值 = 原型 px × 2（rpx） */
+
 .page {
-  padding: 40rpx;
+  min-height: 100vh;
+  background-color: var(--paper, #fff9ec);
+  padding: 40rpx 36rpx 60rpx;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200rpx;
+}
+.empty-text {
+  margin-top: 32rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--ink-soft, #8b8170);
+}
+
+.burst {
+  position: absolute;
+  left: 50%;
+  top: 460rpx;
+  transform: translate(-50%, -50%);
+  width: 660rpx;
+  height: 660rpx;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(255, 179, 0, 0.2) 0 9deg,
+    transparent 9deg 18deg
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.confetti-piece {
+  position: absolute;
+  top: -32rpx;
+  width: 16rpx;
+  height: 26rpx;
+  border: 3rpx solid var(--ink, #2b2b2b);
+  border-radius: 4rpx;
+  animation: confetti-fall 3s linear infinite;
+}
+.confetti-piece.round {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+}
+.confetti-piece:nth-child(1) {
+  animation-delay: 0s;
+}
+.confetti-piece:nth-child(2) {
+  animation-delay: 0.5s;
+}
+.confetti-piece:nth-child(3) {
+  animation-delay: 1s;
+}
+.confetti-piece:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.confetti-piece:nth-child(5) {
+  animation-delay: 1.4s;
+}
+.confetti-piece:nth-child(6) {
+  animation-delay: 0.8s;
+}
+.confetti-piece:nth-child(7) {
+  animation-delay: 0.2s;
+}
+.confetti-piece:nth-child(8) {
+  animation-delay: 1.8s;
+}
+.confetti-piece:nth-child(9) {
+  animation-delay: 2.2s;
+}
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    transform: translateY(1660rpx) rotate(540deg);
+  }
+}
+
+.result-center {
+  display: flex;
+  justify-content: center;
+  margin-top: 60rpx;
+  position: relative;
+  z-index: 3;
+}
+
+.win-title {
+  font-size: 60rpx;
+  text-align: center;
+  position: relative;
+  z-index: 3;
+  margin-top: 8rpx;
+}
+
+.stars {
+  display: flex;
+  justify-content: center;
+  gap: 24rpx;
+  margin-top: 24rpx;
+  position: relative;
+  z-index: 3;
+}
+.star-icon {
+  width: 104rpx;
+  height: 104rpx;
+  animation: star-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.star-icon:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.star-icon:nth-child(2) {
+  animation-delay: 0.25s;
+}
+.star-icon:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes star-pop {
+  0% {
+    transform: scale(0) rotate(-14deg);
+  }
+  70% {
+    transform: scale(1.18) rotate(4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.win-sub {
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 800;
+  margin-top: 16rpx;
+  position: relative;
+  z-index: 3;
+}
+
+.stat-row {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 36rpx;
+  position: relative;
+  z-index: 3;
+}
+.stat {
+  flex: 1;
+  background: #fff;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 28rpx;
+  box-shadow: 0 6rpx 0 rgba(43, 43, 43, 0.85);
+  text-align: center;
+  padding: 24rpx 8rpx;
+}
+.stat-v {
+  font-family: 'ZCOOL KuaiLe', 'PingFang SC', sans-serif;
+  font-size: 42rpx;
+  color: var(--pri-deep, #e29c00);
+}
+.stat-k {
+  font-size: 22rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 700;
+  margin-top: 4rpx;
+}
+
+.result-quote {
+  margin-top: 36rpx;
+  position: relative;
+  z-index: 3;
+}
+.result-quote .say {
+  font-size: 23rpx;
+  padding: 12rpx 20rpx;
+  flex: none;
+}
+.say-b {
+  color: var(--pri-deep, #e29c00);
+}
+
+.result-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 24rpx;
+  position: relative;
+  z-index: 3;
+}
+
+/* 报告生成遮罩 */
+.gen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 249, 236, 0.96);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+}
+.gen-text {
+  margin-top: 40rpx;
+  font-size: 44rpx;
 }

@@ -1,0 +1,44 @@
+/* 底部 Tab 栏（原型 .tabbar：上边框 + paper2 底 + 圆点指示） */
+
+.tabbar {
+  flex: none;
+  border-top: 5rpx solid var(--ink, #2b2b2b);
+  background: var(--paper2, #fbf0d8);
+  display: flex;
+  padding: 16rpx 12rpx 36rpx;
+  position: relative;
+  z-index: 5;
+  /* iPhone 底部安全区 */
+  padding-bottom: calc(36rpx + env(safe-area-inset-bottom));
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  font-size: 22rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 700;
+}
+
+.tab-icon {
+  width: 46rpx;
+  height: 46rpx;
+}
+
+.tab.on {
+  color: var(--ink, #2b2b2b);
+}
+
+.tab .dotmark {
+  height: 8rpx;
+  width: 8rpx;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.tab.on .dotmark {
+  background: var(--pri-deep, #e29c00);
+}

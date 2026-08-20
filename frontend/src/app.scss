@@ -48,3 +48,152 @@ page {
     linear-gradient(var(--paper), var(--paper));
   background-size: 24px 24px, 100% 100%;
 }
+
+/* ============================================================
+   通用组件样式（严格对齐原型 01–04 通用组件区）
+   比例：原型 375px 设计稿 → 750rpx，即 1px = 2rpx
+   ============================================================ */
+
+/* 主按钮：粗描边 + 硬底阴影（按压感） */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14rpx;
+  font-family: inherit;
+  font-size: 30rpx;
+  font-weight: 800;
+  border: 4rpx solid var(--ink);
+  border-radius: 28rpx;
+  padding: 24rpx 36rpx;
+  background: var(--pri);
+  color: var(--ink);
+  box-shadow: 0 8rpx 0 var(--ink);
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.btn:active {
+  transform: translateY(8rpx);
+  box-shadow: 0 0 0 var(--ink);
+}
+.btn.ghost {
+  background: #fff;
+}
+.btn.ok {
+  background: var(--ok);
+  color: #fff;
+}
+.btn.big {
+  width: 100%;
+  font-size: 32rpx;
+  padding: 28rpx;
+}
+.btn.disabled {
+  opacity: 0.45;
+}
+
+/* 卡片：手绘漫画格 */
+.card {
+  background: #fff;
+  border: 4rpx solid var(--ink);
+  border-radius: 32rpx;
+  box-shadow: 0 8rpx 0 rgba(43, 43, 43, 0.85);
+}
+
+/* 药丸 chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  border: 4rpx solid var(--ink);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8rpx 24rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+.chip.on {
+  background: var(--pri);
+}
+.chip.soft {
+  background: var(--pri-soft);
+  border-radius: 20rpx;
+}
+
+/* 小标签 */
+.tag {
+  display: inline-block;
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 4rpx 16rpx;
+  border-radius: 14rpx;
+  border: 3rpx solid var(--ink);
+  background: var(--pri-soft);
+}
+
+/* 对话气泡（默认箭头朝下；.tail-l 箭头朝左） */
+.say {
+  position: relative;
+  background: #fff;
+  border: 4rpx solid var(--ink);
+  border-radius: 24rpx;
+  padding: 18rpx 24rpx;
+  box-shadow: 0 6rpx 0 rgba(43, 43, 43, 0.85);
+  font-size: 25rpx;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.say::before {
+  content: '';
+  position: absolute;
+  left: 40rpx;
+  bottom: -18rpx;
+  width: 26rpx;
+  height: 26rpx;
+  background: #fff;
+  border-right: 4rpx solid var(--ink);
+  border-bottom: 4rpx solid var(--ink);
+  transform: rotate(45deg);
+}
+.say.tail-l::before {
+  left: -16rpx;
+  top: 40rpx;
+  bottom: auto;
+  border-right: none;
+  border-left: 4rpx solid var(--ink);
+}
+.say.ok {
+  border-color: var(--ok);
+}
+.say.ok::before {
+  border-left-color: var(--ok);
+  border-bottom-color: var(--ok);
+}
+.say.bad {
+  border-color: var(--bad);
+}
+.say.bad::before {
+  border-left-color: var(--bad);
+  border-bottom-color: var(--bad);
+}
+.say b {
+  color: var(--pri-deep);
+}
+
+/* 小节标题：黄色小书签 */
+.sect-title {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+  margin: 24rpx 4rpx 16rpx;
+}
+.sect-title::before {
+  content: '';
+  width: 16rpx;
+  height: 32rpx;
+  background: var(--pri);
+  border: 4rpx solid var(--ink);
+  border-radius: 6rpx;
+  transform: rotate(-3deg);
+}

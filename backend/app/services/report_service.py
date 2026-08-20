@@ -42,13 +42,20 @@ async def handle_report_generate(
     score_summary = compute_score_summary(corrected_records)
 
     try:
-        report_output = await generate_report(
-            topic=req.topic,
-            questions=req.questions,
-            answer_records=corrected_records,
-            score_summary=score_summary,
-            model=llm_model,
-        )
+        from app.core.config import get_settings
+
+        if llm_model is None and get_settings().llm_mock:
+            from app.llm.mock_data import build_mock_report
+
+            report_output = build_mock_report(topic=req.topic, score_summary=score_summary)
+        else:
+            report_output = await generate_report(
+                topic=req.topic,
+                questions=req.questions,
+                answer_records=corrected_records,
+                score_summary=score_summary,
+                model=llm_model,
+            )
     except ReportGenerationError:
         raise
     except Exception as exc:

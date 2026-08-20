@@ -1,3 +1,30 @@
 .page {
-  padding: 40rpx;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper, #fff9ec);
+  overflow: hidden;
+}
+
+.sbody {
+  flex: 1;
+  overflow: hidden;
+  height: 0;
+}
+
+.sbody-inner {
+  padding: 12rpx 36rpx 40rpx;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200rpx;
+}
+.empty-text {
+  margin-top: 32rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--ink-soft, #8b8170);
 }

@@ -1,3 +1,140 @@
+/* 「我的」Tab 空态页：头部头像按原型 04 的 avatar 结构 */
+
 .page {
-  padding: 40rpx;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper, #fff9ec);
+  overflow: hidden;
+}
+
+.profile {
+  padding: 32rpx 36rpx 0;
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+}
+
+/* 吉祥物头像（原型 04 avatar 64x64px） */
+.avatar {
+  position: relative;
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 50%;
+  border: 5rpx solid var(--ink, #2b2b2b);
+  background: var(--skin, #ffe3c0);
+  flex: none;
+  overflow: hidden;
+  box-shadow: 0 6rpx 0 rgba(43, 43, 43, 0.85);
+}
+.avatar-hair {
+  position: absolute;
+  background: var(--ink, #2b2b2b);
+  border-radius: 16rpx;
+}
+.avatar-hair.h1 {
+  width: 26rpx;
+  height: 38rpx;
+  top: -8rpx;
+  left: 20rpx;
+  transform: rotate(-20deg);
+}
+.avatar-hair.h2 {
+  width: 20rpx;
+  height: 30rpx;
+  top: -2rpx;
+  left: 54rpx;
+  transform: rotate(14deg);
+}
+.avatar-eye {
+  position: absolute;
+  width: 16rpx;
+  height: 20rpx;
+  background: var(--ink, #2b2b2b);
+  border-radius: 50%;
+  top: 52rpx;
+}
+.avatar-eye::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 6rpx;
+  background: #fff;
+  border-radius: 50%;
+  top: 4rpx;
+  left: 4rpx;
+}
+.avatar-eye.l {
+  left: 32rpx;
+}
+.avatar-eye.r {
+  right: 32rpx;
+}
+.avatar-blush {
+  position: absolute;
+  width: 18rpx;
+  height: 10rpx;
+  background: rgba(240, 79, 79, 0.35);
+  border-radius: 50%;
+  top: 74rpx;
+}
+.avatar-blush.l {
+  left: 16rpx;
+}
+.avatar-blush.r {
+  right: 16rpx;
+}
+.avatar-mouth {
+  position: absolute;
+  top: 76rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30rpx;
+  height: 16rpx;
+  border: 5rpx solid var(--ink, #2b2b2b);
+  border-top: none;
+  border-radius: 0 0 24rpx 24rpx;
+}
+
+.name {
+  font-size: 34rpx;
+  font-weight: 900;
+}
+.lvl {
+  margin-top: 10rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.lvl-chip {
+  background: var(--pri, #ffb300);
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 16rpx;
+  font-size: 22rpx;
+  font-weight: 900;
+  padding: 2rpx 16rpx;
+}
+.xpt {
+  font-size: 21rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 700;
+}
+
+.empty-card {
+  margin: 48rpx 36rpx 0;
+  padding: 48rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 800;
+}
+.empty-desc {
+  margin-top: 16rpx;
+  font-size: 25rpx;
+  color: var(--ink-soft, #8b8170);
+  line-height: 1.7;
 }
