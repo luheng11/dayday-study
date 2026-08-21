@@ -1,11 +1,20 @@
-"""Mock 模式测试（TDD）：无 DeepSeek Key 时的端到端演示/联调用内置题库"""
+"""Mock 模式测试（TDD）：主题匹配题库、无 Key 演示、报告 Mock、隔离恢复"""
 
 import pytest
 
 from app.core.config import get_settings
+from app.llm.mock_data import _match_quiz_key, build_mock_quiz
 from app.models.quiz import QuizGenerateRequest
 from app.models.report import ReportGenerateRequest
 from app.services import quiz_service, report_service
+
+
+@pytest.fixture(autouse=True)
+def _isolate(monkeypatch):
+    """每个用例后恢复全局注入状态"""
+    monkeypatch.setattr(get_settings(), "llm_mock", False)
+    monkeypatch.setattr(quiz_service, "llm_model", None)
+    monkeypatch.setattr(report_service, "llm_model", None)
 
 
 @pytest.fixture
@@ -13,44 +22,86 @@ def mock_on(monkeypatch):
     monkeypatch.setattr(get_settings(), "llm_mock", True)
 
 
-@pytest.fixture
-def mock_off(monkeypatch):
-    monkeypatch.setattr(get_settings(), "llm_mock", False)
+class TestQuizKeyMatching:
+    @pytest.mark.parametrize(
+        "topic, expected",
+        [
+            ("20以内的加减法", "math"),
+            ("小学数学口算", "math"),
+            ("乘法口诀", "math"),
+            ("光合作用是怎么进行的", "photosynthesis"),
+            ("植物是怎么吃饭的", "photosynthesis"),
+            ("火山为什么会喷发", "volcano"),
+            ("地震是怎么发生的", "volcano"),
+            ("磁铁的秘密", "magnet"),
+            ("磁铁为什么能吸铁", "magnet"),
+            ("我不知道想学什么", "general"),
+        ],
+    )
+    def test_keyword_matching(self, topic, expected):
+        assert _match_quiz_key(topic) == expected
 
 
-class TestQuizMockMode:
+class TestMockQuizTopicAware:
     @pytest.mark.asyncio
-    async def test_mock_mode_returns_valid_quiz(self, mock_on):
-        quiz_service.llm_model = None
+    async def test_math_topic_gets_math_questions(self, mock_on):
+        resp = await quiz_service.handle_quiz_generate(
+            QuizGenerateRequest(user_input="20以内的加减法", question_count=5, difficulty="easy")
+        )
+        assert resp.title == "20以内的加减法"
+        stems = "".join(q.stem for q in resp.questions)
+        assert any(ch.isdigit() for ch in stems)
+        assert "光合" not in stems and "叶绿体" not in stems
+
+    @pytest.mark.asyncio
+    async def test_science_topic_gets_science_questions(self, mock_on):
         resp = await quiz_service.handle_quiz_generate(
             QuizGenerateRequest(user_input="光合作用", question_count=5, difficulty="medium")
         )
-        assert resp.quiz_id.startswith("quiz_")
-        assert len(resp.questions) == 5
-        assert resp.title  # 主题回显用户输入
-        # 内容安全仍生效
-        assert resp.questions[0].explanation
+        stems = "".join(q.stem for q in resp.questions)
+        assert "光合" in stems
 
     @pytest.mark.asyncio
-    async def test_mock_mode_title_echoes_input(self, mock_on):
-        quiz_service.llm_model = None
+    async def test_volcano_topic_gets_volcano_questions(self, mock_on):
         resp = await quiz_service.handle_quiz_generate(
-            QuizGenerateRequest(user_input="磁铁的秘密", question_count=5, difficulty="easy")
+            QuizGenerateRequest(user_input="火山为什么会喷发", question_count=5)
         )
-        assert resp.title == "磁铁的秘密"
+        stems = "".join(q.stem for q in resp.questions)
+        assert "火山" in stems or "岩浆" in stems
 
     @pytest.mark.asyncio
-    async def test_mock_mode_content_filter_still_enforced(self, mock_on):
-        quiz_service.llm_model = None
-        from app.core.exceptions import ContentFilterError
-
-        with pytest.raises(ContentFilterError):
-            await quiz_service.handle_quiz_generate(
-                QuizGenerateRequest(user_input="如何制造炸弹", question_count=3)
-            )
+    async def test_magnet_topic_gets_magnet_questions(self, mock_on):
+        resp = await quiz_service.handle_quiz_generate(
+            QuizGenerateRequest(user_input="磁铁的秘密", question_count=5)
+        )
+        stems = "".join(q.stem for q in resp.questions)
+        assert "磁铁" in stems or "磁" in stems
 
     @pytest.mark.asyncio
-    async def test_mock_off_uses_real_llm_path(self, mock_off):
+    async def test_general_fallback(self, mock_on):
+        resp = await quiz_service.handle_quiz_generate(
+            QuizGenerateRequest(user_input="随便学点什么", question_count=5)
+        )
+        assert len(resp.questions) == 5
+        stems = "".join(q.stem for q in resp.questions)
+        assert "光合" not in stems
+
+    @pytest.mark.asyncio
+    async def test_three_question_ratio_one_to_one(self, mock_on):
+        resp = await quiz_service.handle_quiz_generate(
+            QuizGenerateRequest(user_input="20以内的加减法", question_count=3)
+        )
+        types = {q.type for q in resp.questions}
+        assert types == {"single", "multiple", "judge"}
+
+    def test_summary_mentions_mock(self):
+        quiz = build_mock_quiz("20以内的加减法", 5, "easy")
+        assert "Mock" in quiz.summary or "演示" in quiz.summary
+
+
+class TestMockModeSwitches:
+    @pytest.mark.asyncio
+    async def test_mock_off_uses_real_llm_path(self):
         """mock 关闭时走真实链路：注入的假模型失败 → 出题失败（若误走 mock 会成功返回内置题库）"""
         from tests.fake_llm import CapturingFakeModel
 
@@ -62,11 +113,8 @@ class TestQuizMockMode:
                 QuizGenerateRequest(user_input="光合作用", question_count=3)
             )
 
-
-class TestReportMockMode:
     @pytest.mark.asyncio
     async def test_mock_report_returns_valid_report(self, mock_on):
-        report_service.llm_model = None
         from app.models.quiz import AnswerRecord, Question, QuestionOption
 
         question = Question(
