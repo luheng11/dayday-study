@@ -146,4 +146,5 @@ class TestGenerateReportExhausted:
                 score_summary=score_summary,
                 model=model,
             )
-        assert model.call_count == 3
+        # 报告同步接口受前端 60s 超时约束：最多 2 次尝试（20s × 2 最坏 40s）
+        assert model.call_count == 2

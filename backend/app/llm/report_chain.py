@@ -44,7 +44,7 @@ async def generate_report(
         model = get_chat_model(
             temperature=settings.report_temperature,
             top_p=settings.report_top_p,
-            timeout=settings.llm_timeout_seconds,
+            timeout=settings.llm_report_timeout_seconds,
             max_tokens=settings.llm_max_tokens,
         )
 
@@ -66,7 +66,7 @@ async def generate_report(
         "score_summary": json.dumps(score_summary, ensure_ascii=False),
     }
 
-    for attempt in range(1, settings.llm_max_attempts + 1):
+    for attempt in range(1, settings.llm_report_max_attempts + 1):
         try:
             result = await chain.ainvoke(messages)
             content = getattr(result, "content", None)

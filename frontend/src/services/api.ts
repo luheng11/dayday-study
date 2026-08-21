@@ -36,6 +36,11 @@ export async function request<T>(
       header: { 'Content-Type': 'application/json' },
     })
   } catch (e) {
+    const errMsg = (e as { errMsg?: string })?.errMsg || String(e)
+    console.error('[api] request failed:', url, errMsg)
+    if (errMsg.includes('timeout')) {
+      throw new ApiError(-1, '请求超时了，请稍后重试')
+    }
     throw new ApiError(-1, '网络开小差了，请检查网络后重试')
   }
 

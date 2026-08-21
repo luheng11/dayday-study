@@ -23,6 +23,8 @@ def get_chat_model(
         "temperature": temperature,
         "max_tokens": max_tokens if max_tokens is not None else settings.llm_max_tokens,
         "timeout": timeout if timeout is not None else settings.llm_timeout_seconds,
+        # 关闭 SDK 内部重试（openai 默认 2 次会与我们自己的兜底循环叠加放大耗时）
+        "max_retries": 0,
     }
     if top_p is not None:
         kwargs["top_p"] = top_p
