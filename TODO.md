@@ -10,47 +10,72 @@
 
 ## A. 验证缺口（"写了但从没真跑过"）
 
-### A1 🟠 真实 MySQL 仓储层未验证 —— **15 个集成测试长期被跳过**
+### A1 ✅ 真实 MySQL 仓储层已验证（2026-09-30）
 
-- **现状**：`tests/test_repositories_mysql.py` 全部用例由 `RUN_MYSQL_TESTS=1` 守卫，
-  默认跳过。开发机上 MySQL 从未跑起来（Docker daemon 未运行），因此
-  **建表 / 用户 CRUD / upsert 语义 / 历史分页与 range 过滤 / 统计聚合 SQL /
-  跨用户数据隔离** 这些真实 SQL 一行都没执行过，只有 mock 测试背书。
-- **影响**：Phase 5 持久化是本项目唯一的真实数据库逻辑，SQL 写错（字段名、
-  索引、`ON DUPLICATE KEY` 语义、时区/日期边界）测试完全发现不了。
-- **怎么验**：已在 `backend/scripts/verify_mysql.py` 里串好一键流程：
+- **结果**：容器 `chuangguan-mysql`（mysql:8.4.11）启动成功，**15 个集成测试全通过**；
+  开启 `RUN_MYSQL_TESTS=1` 后全量套件 **280 passed / 0 failed**（较关闭时 +15）。
+  三个 e2e 也全部通过：`e2e_user_system.py`、`e2e_smoke.py`、`e2e_avatar.py`。
+- **数据侧核对**：`users.total_xp` 与 `answer_records` 汇总一致
+  （user 1：xp=105 / 3 次闯关 / 答对 9 题），无 XP 重复累加。
+- **结论：先前静态复查的 4 条隐患，2 条已排除、1 条降级为"依赖环境变量"**：
+  1. ~~时区口径不一致~~ → **实测当前无偏移**：容器内 `@@system_time_zone=CST`，
+     MySQL `NOW()` 与主机本地时间逐秒一致，落库时间戳为本地时间。
+     **但这是靠 `docker run -e TZ=Asia/Shanghai` 这一个环境变量撑着的**——
+     换台机器/改用云数据库（多半 UTC）就会退化成 8 小时偏移，而 mock 测试
+     原理上发现不了。**仍建议显式归一化**（见 A1-1 待办）。
+  2. ~~`AS new` 别名语法需 ≥8.0.19~~ → 已确认 `mysql:8` 实为 **8.4.11**，语法支持；
+     XP 增量实测精确（每次闯关 +35 = 10+15+10），`rowcount==1` 判新插入的语义正确。
+  3. **外键顺序**：落库顺序正确（先 `quiz_sessions` 后 `answer_records`/`reports`），
+     但该约束仍脆弱——顺序写错会被 `except Exception` 吞成**静默不落库**，
+     建议至少把吞掉的异常提升为 warning 级日志。
+- **怎么复验**：一键脚本已就绪：
   ```powershell
   cd backend
   .\.venv\Scripts\python scripts\verify_mysql.py        # 起库 + 跑集成测试
   .\.venv\Scripts\python scripts\verify_mysql.py --e2e  # 额外跑用户系统 e2e
   ```
-  若提示连不上 Docker daemon，先在**普通终端**启动 Docker Desktop。
   集成测试用独立库 `chuangguan_test`，不会碰开发库。
-- **静态复查发现的隐患（尚未被任何测试覆盖，跑集成测试时重点看）**：
-  1. **时区口径不一致（最可疑）**：`created_at` 用 MySQL 的 `CURRENT_TIMESTAMP`
-     （服务器时区），而过滤/聚合的"起点"用 Python 的朴素 `datetime.now()`
-     （操作系统本地时区）—— 见 `quiz_repository.get_user_answer_stats` /
-     `get_user_quiz_list` / `get_user_daily_stats`、`history_service`、
-     `user_service._week_start`。**系统未做任何时区归一化**（无 `SET time_zone`、
-     无 `init_command`，仅靠 README 里 `docker run -e TZ=Asia/Shanghai` 兜着）。
-     若 MySQL 实际按 UTC 跑而机器是 UTC+8，则"最近 7 天""本周""连续打卡"
-     会有 8 小时偏移，**且现有 mock 测试原理上无法发现**。建议显式统一
-     （连接层 `init_command="SET time_zone='+08:00'"`，或改用 UTC 存储 + 应用侧换算）。
-  2. `ON DUPLICATE KEY UPDATE` 的 `VALUES ... AS new` 别名语法需 MySQL **≥ 8.0.19**；
-     且 `return cur.rowcount == 1` 依赖 PyMySQL 对 rowcount 的语义（插入=1、
-     更新=2、值无变化=0）。这直接决定 XP 是否重复累加，必须真机核对。
-  3. `answer_records` / `reports` 都有指向 `quiz_sessions(quiz_id)` 的外键，
-     因此落库顺序必须严格是"先 quiz_sessions 后 answer_records/reports"；
-     若顺序颠倒会抛外键错误（当前被 `except Exception` 吞掉只记日志，
-     表现为**静默不落库**）。
-  4. `docker run` 的 `--character-set-server` 等参数写在镜像名之后，传参正确；
-     但容器首次初始化若失败会反复重启，`docker logs` 优先看。
-
-- [ ] 跑通 15 个 MySQL 集成测试并记录结果
-- [ ] 跑 `scripts/e2e_user_system.py`（登录 → 落库 → 回看 → 匿名回归）
-- [ ] 跑 `scripts/e2e_avatar.py`（头像上传链路）
-- [ ] 核对上面 4 条隐患（尤其时区口径）并修复
+- [x] 跑通 15 个 MySQL 集成测试并记录结果
+- [x] 跑 `scripts/e2e_user_system.py`（登录 → 落库 → 回看 → 匿名回归）
+- [x] 跑 `scripts/e2e_avatar.py`（头像上传链路）
+- [x] 核对上面 4 条隐患（时区/别名语法/rowcount/外键顺序）
+- [ ] **A1-1**：把时区口径显式归一化（连接层 `init_command="SET time_zone='+08:00'"`，
+      或统一 UTC 存储 + 应用侧换算），不要依赖容器的 `TZ` 环境变量
+- [ ] **A1-2**：`quiz_service` / `report_service` 落库失败目前只 `logger.error`
+      且主流程静默继续，建议补一个可观测信号（指标或告警），否则"静默不落库"难发现
 - [ ] 把 `RUN_MYSQL_TESTS=1` 纳入 CI（见 C1）
+
+<details>
+<summary>附：验证前的隐患分析（保留备查）</summary>
+
+- **当时现状**：`tests/test_repositories_mysql.py` 全部用例由 `RUN_MYSQL_TESTS=1` 守卫，
+  默认跳过；开发机上 MySQL 从未跑起来（Docker daemon 未运行），因此
+  建表 / 用户 CRUD / upsert 语义 / 历史分页与 range 过滤 / 统计聚合 SQL /
+  跨用户数据隔离 这些真实 SQL 一行都没执行过，只有 mock 测试背书。
+- **当时影响**：Phase 5 持久化是本项目唯一的真实数据库逻辑，SQL 写错（字段名、
+  索引、`ON DUPLICATE KEY` 语义、时区/日期边界）测试完全发现不了。
+- 第 4 条原记录：`docker run` 的 `--character-set-server` 等参数写在镜像名之后，
+  传参正确；但容器首次初始化若失败会反复重启，`docker logs` 优先看。
+</details>
+
+### A1a 🟠 端口 8000 上有一个**运行旧代码**的遗留服务
+
+- **现状**：`127.0.0.1:8000` 被 PID 41456 占用（启动于 2026-09-17），
+  其 `/api/v1/health` 返回的是**扁平且带 `code` 的旧格式**（`version 0.2.0`），
+  而当前代码返回新格式（`version 0.1.0` + `data` 包裹）。即该进程跑的是
+  旧版本代码，容易让联调/验收误判。
+- [ ] 确认该进程是否还需要；不需要则结束它，统一用当前代码起服务
+- [ ] 本地联调前先确认端口归属（`netstat -ano | findstr :8000`）
+
+### A1b 🟡 e2e 脚本原先不可重复运行（已修）
+
+- **现象**：`e2e_user_system.py` 用绝对值断言（`assert p1["quiz_count"] == 1`），
+  只要开发库里已有历史数据就必然失败——实际是**脚本缺陷**，不是功能缺陷。
+- **已修**：改为增量断言（闯关次数 +1、答对数 +题数、XP 增量 == 10/15/10 之和），
+  现在可无副作用重复运行；连续两次运行均 PASS。
+- **顺带**：三个 e2e 脚本的服务地址改为可通过 `E2E_PORT` / `E2E_HOST` /
+  `E2E_BASE` 覆盖（默认仍是 8000），8000 被占用时可换端口验证。
+- [x] 修成增量断言并验证可重复运行
 
 ### A2 🟡 真实微信登录（jscode2session）未验证
 

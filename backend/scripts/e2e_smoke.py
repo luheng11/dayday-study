@@ -7,13 +7,15 @@
 
 import asyncio
 import sys
+from pathlib import Path
 
 # Windows 控制台 GBK 下避免 emoji 输出报错
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import httpx
 
-BASE = "http://127.0.0.1:8000/api/v1"
+from _e2e_base import API_BASE as BASE
 
 
 async def main() -> int:

@@ -1,7 +1,11 @@
 """头像上传实测：登录 → 上传 PNG → 校验返回 URL 可访问（静态服务）"""
+import sys
+from pathlib import Path
+
 import httpx
 
-BASE = "http://127.0.0.1:8000"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _e2e_base import ROOT_BASE as BASE  # noqa: E402
 
 # 最小合法 PNG（1x1 透明像素）
 PNG_BYTES = bytes.fromhex(

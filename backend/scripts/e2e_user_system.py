@@ -4,10 +4,13 @@
 """
 
 import json
+import sys
+from pathlib import Path
 
 import httpx
 
-BASE = "http://127.0.0.1:8000/api/v1"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _e2e_base import API_BASE as BASE  # noqa: E402
 
 
 def post(client: httpx.Client, path: str, body: dict, token: str | None = None):
@@ -35,7 +38,7 @@ def main() -> None:
             f"nickname={login['data']['user']['nickname']} token_len={len(token)}"
         )
 
-        # 2. 初始档案
+        # 2. 初始档案（记录基线：脚本需可重复运行，断言一律用增量而非绝对值）
         p0 = get(client, "/user/profile", token)["data"]
         print(
             f"2. PROFILE INIT: quiz_count={p0['quiz_count']} xp={p0['total_xp']} "
@@ -75,15 +78,26 @@ def main() -> None:
         )["data"]
         print(f"4. REPORT OK: accuracy={report['accuracy']} quote={report['share_quote']}")
 
-        # 5. 档案更新
+        # 5. 档案更新（增量断言）
         p1 = get(client, "/user/profile", token)["data"]
         print(
             f"5. PROFILE UPDATED: quiz_count={p1['quiz_count']} correct={p1['correct_count']} "
             f"avg={p1['average_accuracy']} xp={p1['total_xp']} week={p1['week_quiz_count']} "
             f"streak={p1['streak_days']}"
         )
-        assert p1["quiz_count"] == 1
-        assert p1["total_xp"] > 0
+        assert p1["quiz_count"] == p0["quiz_count"] + 1, (
+            f"闯关次数应 +1：{p0['quiz_count']} -> {p1['quiz_count']}"
+        )
+        assert p1["correct_count"] == p0["correct_count"] + len(records), (
+            f"答对题数应 +{len(records)}：{p0['correct_count']} -> {p1['correct_count']}"
+        )
+        xp_gain = p1["total_xp"] - p0["total_xp"]
+        assert xp_gain > 0, "本次闯关应累加 XP"
+        # 全部答对时，XP 应等于该题库的分值总和（单选 10 / 多选 15 / 判断 10）
+        XP_BY_TYPE = {"single": 10, "multiple": 15, "judge": 10}
+        expected_xp = sum(XP_BY_TYPE[q["type"]] for q in quiz["questions"])
+        assert xp_gain == expected_xp, f"XP 累加应为 {expected_xp}，实际 {xp_gain}"
+        print(f"5b. XP DELTA OK: +{xp_gain}（符合 10/15/10 规则）")
 
         # 6. 历史列表
         hlist = get(client, "/user/quizzes?page=1&page_size=10&only_completed=true", token)["data"]

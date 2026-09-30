@@ -71,7 +71,7 @@ docker run -d --name chuangguan-mysql -e TZ=Asia/Shanghai `
 
 # 运行测试（mock 大模型，不消耗 API 额度；MySQL 仓储集成测试需额外开关）
 .\.venv\Scripts\python -m pytest              # 基础套件（265 passed / 15 skipped）
-$env:RUN_MYSQL_TESTS='1'; .\.venv\Scripts\python -m pytest   # 含真实 MySQL 集成测试
+$env:RUN_MYSQL_TESTS='1'; .\.venv\Scripts\python -m pytest   # 含真实 MySQL 集成测试（280 passed）
 
 # 一键验证真实 MySQL 仓储层（起容器 → 等就绪 → 跑集成测试 → 可选 e2e）
 .\.venv\Scripts\python scripts\verify_mysql.py         # 需 Docker Desktop 已启动
@@ -186,11 +186,18 @@ npm run dev:weapp                # 本地联调：development 配置（API 指�
 | 项目 | 结果 |
 |---|---|
 | 基础套件 | ✅ `265 passed, 15 skipped, 3 errors` |
+| **真实 MySQL 集成测试** | ✅ `RUN_MYSQL_TESTS=1` 时 **280 passed / 0 failed**（mysql:8.4.11，容器 `chuangguan-mysql`） |
 | 真实 DeepSeek 出题 | ✅ `scripts/verify_deepseek.py`（模型 `deepseek-v4-flash` 有效，返回结构合规） |
 | 真实 DeepSeek 报告 | ✅ `scripts/verify_deepseek.py --report`（10.1s，在 20s 超时预算内） |
-| 真实 MySQL 仓储集成测试 | ⚠️ **未验证**（15 个用例长期 skipped，开发机 MySQL 未启动）→ 见 `TODO.md` A1 |
+| 用户系统端到端 | ✅ `scripts/e2e_user_system.py`（登录→出题落库→报告落库+XP→历史/详情/统计回看→匿名回归 401） |
+| M1 核心闭环冒烟 | ✅ `scripts/e2e_smoke.py`（异步出题→轮询→答题→报告，含服务端权威判分） |
+| 头像上传链路 | ✅ `scripts/e2e_avatar.py`（上传→静态可访问→档案回写→非图片被拒） |
 | 微信开发者工具人工验收 | ⚠️ **未做** → 见 `TODO.md` A3 |
+| 真实微信登录（jscode2session） | ⚠️ **未验证**（仍走开发降级） → 见 `TODO.md` A2 |
 | 前端类型检查 | ✅ `npx tsc --noEmit` 通过 |
+
+> e2e 脚本的服务地址可用 `E2E_PORT` / `E2E_HOST` / `E2E_BASE` 覆盖（默认 `127.0.0.1:8000`），
+> 本地 8000 被占用时可换端口：`$env:E2E_PORT='8001'; python scripts/e2e_user_system.py`。
 
 > `3 errors` 全部是 `test_avatar_api.py` 因沙箱/受限环境把 `TEMP` 重定向到不可写目录
 > 导致的 `tmp_path` 失败，**非代码缺陷**，普通终端下通过。
