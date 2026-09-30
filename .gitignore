@@ -6,3 +6,7 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 *.tmp
+
+# 后端本地数据与密钥
+backend/data/
+backend/.env
