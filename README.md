@@ -71,7 +71,7 @@ docker run -d --name chuangguan-mysql -e TZ=Asia/Shanghai `
 
 # 运行测试（mock 大模型，不消耗 API 额度；MySQL 仓储集成测试需额外开关）
 .\.venv\Scripts\python -m pytest              # 基础套件（265 passed / 15 skipped）
-$env:RUN_MYSQL_TESTS='1'; .\.venv\Scripts\python -m pytest   # 含真实 MySQL 集成测试（280 passed）
+$env:RUN_MYSQL_TESTS='1'; .\.venv\Scripts\python -m pytest   # 含真实 MySQL 集成测试（295 passed）
 
 # 一键验证真实 MySQL 仓储层（起容器 → 等就绪 → 跑集成测试 → 可选 e2e）
 .\.venv\Scripts\python scripts\verify_mysql.py         # 需 Docker Desktop 已启动
@@ -156,6 +156,8 @@ npm run dev:weapp                # 本地联调：development 配置（API 指�
 - **代理环境变量（Windows 常见坑）**：部分代理客户端会把 IPv6 回环写成方括号形式，得到 `NO_PROXY=localhost,127.0.0.1,::1,[::1]`。httpx 的 `URLPattern` 会把 `[::1]` 误当 `host:port` 解析并抛 `InvalidURL: Invalid port: ':1]'`；**异常发生在客户端构造阶段**，所以凡是走 httpx 的调用都会当场失败（微信登录，以及内部构造 httpx client 的 `ChatOpenAI` → 出题链/报告链全部不可用）。后端已在代码层做幂等规整（`app/core/proxy_env.py::sanitize_proxy_env`，在 `main` 启动、`get_chat_model`、`wx_code_to_openid` 三处调用）：方括号 IPv6 去括号、空条目与重复条目清理，真实代理地址原样保留，**无需修改机器环境变量**；如想从根上避免该写法，可把 `NO_PROXY` 改成 `localhost,127.0.0.1,::1`
 - **图标**：`tools/gen-icons.mjs` 将 SVG 栅格化为 PNG（≤2KB 会被 webpack 内联为 base64，属正常现象）
 - **npm 安装**：Taro 4.1.11 在 npm 11 下需 `--legacy-peer-deps`（peer 依赖校验变严所致）
+- **时区口径（已归一化）**：各表 `created_at` 由 MySQL `CURRENT_TIMESTAMP` 填充（取**服务器会话时区**），而应用侧时间窗口/聚合用 Python 朴素 `datetime.now()`（**本机本地时区**）。二者不一致时"最近 7 天""本周闯关""连续打卡"会**静默偏移**（实测 MySQL 跑 UTC 时差 8 小时）。现在连接层已显式设置会话时区（`app/core/db.py::mysql_time_zone_init_command` → `init_command="SET time_zone='±HH:MM'"`），**不再依赖容器的 `TZ` 环境变量**。换云数据库或换机器都不会退化
+- **本地 8000 端口可能与第三方应用冲突**：若健康检查返回的不是 `{"code":0,...,"service":"闯关学堂"}`，说明 8000 被别的程序占用（本项目后端没起来），前端会表现为"网络开小差"。先 `netstat -ano | findstr :8000` 确认归属
 
 ---
 
@@ -186,7 +188,8 @@ npm run dev:weapp                # 本地联调：development 配置（API 指�
 | 项目 | 结果 |
 |---|---|
 | 基础套件 | ✅ `265 passed, 15 skipped, 3 errors` |
-| **真实 MySQL 集成测试** | ✅ `RUN_MYSQL_TESTS=1` 时 **280 passed / 0 failed**（mysql:8.4.11，容器 `chuangguan-mysql`） |
+| **真实 MySQL 集成测试** | ✅ `RUN_MYSQL_TESTS=1` 时 **295 passed / 0 failed**（mysql:8.4.11，容器 `chuangguan-mysql`） |
+| 时区口径归一化 | ✅ A/B 实测：MySQL 跑 UTC 时，修复前落库时间戳与本机差 **28800s(8h)**，修复后 **1s** |
 | 真实 DeepSeek 出题 | ✅ `scripts/verify_deepseek.py`（模型 `deepseek-v4-flash` 有效，返回结构合规） |
 | 真实 DeepSeek 报告 | ✅ `scripts/verify_deepseek.py --report`（10.1s，在 20s 超时预算内） |
 | 用户系统端到端 | ✅ `scripts/e2e_user_system.py`（登录→出题落库→报告落库+XP→历史/详情/统计回看→匿名回归 401） |

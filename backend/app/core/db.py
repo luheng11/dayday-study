@@ -3,12 +3,14 @@
 - 启动时自动 CREATE DATABASE + 建表（mysql_auto_init=true）；
 - 连不上 MySQL 不阻断应用启动（可选登录：核心出题/报告仍可用）；
 - DDL 全部使用 IF NOT EXISTS，重复启动时静默跳过（MySQL 仍会发出「已存在」
-  Warning，属于无害噪音，在建表阶段统一屏蔽）。
+  Warning，属于无害噪音，在建表阶段统一屏蔽）；
+- **会话时区显式设为本机本地偏移**，见 `mysql_time_zone_init_command`。
 """
 
 import warnings
 from contextlib import contextmanager
-from typing import Final, Optional, Iterator
+from datetime import datetime, tzinfo
+from typing import Final, Iterator, Optional
 
 import aiomysql
 import structlog
@@ -18,6 +20,40 @@ from app.core.config import get_settings
 logger = structlog.get_logger()
 
 _pool: Optional[aiomysql.Pool] = None
+
+
+def mysql_time_zone_init_command(tz: Optional[tzinfo] = None) -> str:
+    """生成把 MySQL 会话时区设为本机本地偏移的 `init_command`。
+
+    为什么必须显式设置：
+        各表的 `created_at` 由 `CURRENT_TIMESTAMP` 填充，取值取决于**服务器会话
+        时区**；而应用侧所有时间范围过滤与聚合的"起点"都是 Python 的朴素
+        `datetime.now()`（操作系统本地时区）。二者不一致时，"最近 7 天""本周
+        闯关""连续打卡"会出现固定偏移，且**静默不报错**。
+
+        此前只靠 MySQL 容器的 `-e TZ=Asia/Shanghai` 兜着；换台机器、或改用
+        云数据库（通常为 UTC）就会退化成 8 小时偏移。这里把口径固定在连接层，
+        行为不再依赖外部环境变量。
+
+    MySQL 的 `SET time_zone` 只接受 `±HH:MM`（整分钟），因此秒级偏移（某些
+    历史时区的 LMT）会显式抛 ValueError，而不是写出一条非法语句。
+    """
+    if tz is None:
+        tz = datetime.now().astimezone().tzinfo
+    offset = datetime.now(tz).utcoffset()
+    if offset is None:
+        raise ValueError(f"无法确定时区偏移：{tz!r}")
+
+    total_seconds = offset.total_seconds()
+    if total_seconds % 60 != 0:
+        raise ValueError(
+            f"时区偏移含秒级部分（{tz!r}），MySQL 的 SET time_zone 不接受：{offset}"
+        )
+
+    total_minutes = int(total_seconds // 60)
+    sign = "+" if total_minutes >= 0 else "-"
+    total_minutes = abs(total_minutes)
+    return f"SET time_zone='{sign}{total_minutes // 60:02d}:{total_minutes % 60:02d}'"
 
 
 @contextmanager
@@ -118,6 +154,8 @@ async def init_mysql() -> None:
         return
 
     settings = get_settings()
+    # 会话时区与本机对齐，保证 CURRENT_TIMESTAMP 与 datetime.now() 口径一致
+    init_command = mysql_time_zone_init_command()
 
     bootstrap_conn = await aiomysql.connect(
         host=settings.mysql_host,
@@ -126,6 +164,7 @@ async def init_mysql() -> None:
         password=settings.mysql_password,
         charset=settings.mysql_charset,
         autocommit=True,
+        init_command=init_command,
     )
     try:
         with _silence_mysql_ddl_warnings():
@@ -147,6 +186,7 @@ async def init_mysql() -> None:
         minsize=settings.mysql_pool_minsize,
         maxsize=settings.mysql_pool_maxsize,
         autocommit=True,
+        init_command=init_command,
     )
 
     with _silence_mysql_ddl_warnings():

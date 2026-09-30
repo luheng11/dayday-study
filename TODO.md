@@ -39,8 +39,19 @@
 - [x] 跑 `scripts/e2e_user_system.py`（登录 → 落库 → 回看 → 匿名回归）
 - [x] 跑 `scripts/e2e_avatar.py`（头像上传链路）
 - [x] 核对上面 4 条隐患（时区/别名语法/rowcount/外键顺序）
-- [ ] **A1-1**：把时区口径显式归一化（连接层 `init_command="SET time_zone='+08:00'"`，
-      或统一 UTC 存储 + 应用侧换算），不要依赖容器的 `TZ` 环境变量
+- [x] **A1-1**：把时区口径显式归一化 —— **已完成**：`app/core/db.py` 新增
+      `mysql_time_zone_init_command()`，在 `aiomysql.connect` 与 `create_pool`
+      都传 `init_command="SET time_zone='±HH:MM'"`（按本机本地偏移计算），
+      不再依赖容器的 `TZ` 环境变量。MySQL 只接受整分钟偏移，秒级偏移抛 ValueError。
+      A/B 实测（MySQL 故意跑在 UTC 容器、应用在本机 UTC+8）：
+      | | session time_zone | MySQL NOW() | 落库 created_at | 与本地偏移 |
+      |---|---|---|---|---|
+      | 无修复 | `SYSTEM` | 05:26:26 | 05:26:26 | **28800s（8.0h）** |
+      | 有修复 | `+08:00` | 13:26:26 | 13:26:26 | **1s** |
+      新增 11 个单测（`tests/test_db_timezone.py`，覆盖 +08:00/+05:30/+05:45/负偏移/UTC
+      与秒级偏移拒绝）+ 4 个真实 MySQL 集成测试（`tests/test_db_timezone_mysql.py`，
+      断言 `@@session.time_zone != 'SYSTEM'`、DB `NOW()` 与本机漂移 <60s、
+      `created_at` 往返回本地口径、近 7 天窗口边界）。
 - [ ] **A1-2**：`quiz_service` / `report_service` 落库失败目前只 `logger.error`
       且主流程静默继续，建议补一个可观测信号（指标或告警），否则"静默不落库"难发现
 - [ ] 把 `RUN_MYSQL_TESTS=1` 纳入 CI（见 C1）
@@ -58,16 +69,28 @@
   传参正确；但容器首次初始化若失败会反复重启，`docker logs` 优先看。
 </details>
 
-### A1a 🟠 端口 8000 上有一个**运行旧代码**的遗留服务
+### A1a ✅ 端口 8000 的遗留服务已处理（2026-09-30）
 
-- **现状**：`127.0.0.1:8000` 被 PID 41456 占用（启动于 2026-09-17），
-  其 `/api/v1/health` 返回的是**扁平且带 `code` 的旧格式**（`version 0.2.0`），
-  而当前代码返回新格式（`version 0.1.0` + `data` 包裹）。即该进程跑的是
-  旧版本代码，容易让联调/验收误判。
-- [ ] 确认该进程是否还需要；不需要则结束它，统一用当前代码起服务
-- [ ] 本地联调前先确认端口归属（`netstat -ano | findstr :8000`）
+- **查明真相**：占用 `127.0.0.1:8000` 的 PID 41456 **不是本项目**，而是
+  **BidLens（招投标文件智能问答与审查系统）**，由 Kimi Desktop 自带运行时启动
+  （`AppData\Roaming\kimi-desktop\daimon-bundle\runtime\python`），OpenAPI 标题为
+  「BidLens · 招投标文件智能问答与审查系统」v0.2.0。
+- **为什么会误导**：它的健康检查在 `/api/health`，而本项目健康检查在 `/api/v1/health`。
+  前端 `config/dev.ts` 的 `API_BASE_URL` 指向 `http://127.0.0.1:8000/api/v1`，
+  于是打到 BidLens 上得到 `{"detail":"Not Found"}` —— 这正是"网络开小差"的一个真实来源：
+  **本项目的后端压根没起来（端口被占），而不是接口写错**。
+- **已处理**：结束 PID 41456，8000 端口释放；已用当前代码把本项目后端起在 8000 上并验证：
+  ```json
+  {"code":0,"message":"ok","data":{"status":"ok","service":"闯关学堂","version":"0.1.0"}}
+  ```
+- **注意**：BidLens 是 Kimi Desktop 的本地服务，**可能随 Kimi Desktop 重启再次占用 8000**。
+  若再遇到，先 `netstat -ano | findstr :8000` 确认归属；长期方案是给本项目换端口
+  （并同步改 `frontend/config/dev.ts`），或不用 Kimi Desktop 时退出它。
+- [x] 确认归属并结束旧服务
+- [x] 用当前代码在 8000 重新起服务并验证
+- [ ] 若冲突复现：考虑固定本项目端口为 8010 等，避开第三方应用常用端口
 
-### A1b 🟡 e2e 脚本原先不可重复运行（已修）
+### A1b ✅ e2e 脚本原先不可重复运行（已修）
 
 - **现象**：`e2e_user_system.py` 用绝对值断言（`assert p1["quiz_count"] == 1`），
   只要开发库里已有历史数据就必然失败——实际是**脚本缺陷**，不是功能缺陷。
