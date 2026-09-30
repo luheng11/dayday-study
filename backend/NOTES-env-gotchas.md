@@ -61,6 +61,46 @@ client 的 `langchain_openai.ChatOpenAI(...)`。对应业务链路：微信登�
 
 ---
 
+## 1b. 推送 GitHub 被拒：现有 SSH key 是**只读 deploy key**
+
+推送到 `git@github.com:luheng11/dayday-study.git` 时报：
+
+```
+ERROR: Permission to luheng11/dayday-study.git denied to deploy key
+```
+
+**根因**：`C:\Users\14314\.ssh\` 下有两个 key，身份完全不同：
+
+| key | 在 GitHub 上的身份 | 能否 push |
+|---|---|---|
+| `id_ed25519` | **未注册**（`ssh -T` 报 `Permission denied (publickey)`） | ❌ |
+| `id_ed25519_github` | **deploy key**，且只绑在 BidLens 仓库上 | ❌ 只读，且仅限那一仓库 |
+
+判断技巧：`ssh -T git@github.com` 的欢迎语如果是
+`Hi <owner>/<repo>! You've successfully authenticated...`，说明用的是 **deploy key**
+（仓库级、可通过 "Allow write access" 控制读写）；
+如果是 `Hi <username>!`，那才是**账号级** key，可以推任意仓库。
+
+另外 `~/.ssh/config` 里**没有 github.com 的 Host 条目**，所以默认不会用
+`id_ed25519_github`，必须显式 `-i` 或补 config。
+
+**解法（二选一，都需要在 GitHub 网页端操作）**：
+1. 把 `id_ed25519_github.pub` 加到 **账号级** SSH keys
+   （Settings → SSH and GPG keys → New SSH key，类型选 Authentication Key）。
+   加完后同一个 key 就能推任意仓库。
+2. 或给 `dayday-study` 单独加一个 **勾选 "Allow write access"** 的 deploy key。
+
+**先查身份再重试**（本机已配好 `-i` 时可直接用）：
+```powershell
+ssh -T git@github.com          # 期望看到 "Hi luheng11!"（账号级）
+git push -u origin main
+```
+
+**顺带**：本机**没有** `gh` CLI、**没有** credential helper、**没有** 任何
+`GITHUB_TOKEN`/`GH_TOKEN`，所以无法走 HTTPS 令牌方式，也没有可用的交互式登录途径。
+
+---
+
 ## 2. 测试数量口径：15 skipped + 3 errors 分别是什么
 
 ```
