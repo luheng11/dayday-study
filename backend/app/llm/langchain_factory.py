@@ -6,6 +6,7 @@
 from langchain_openai import ChatOpenAI
 
 from app.core.config import get_settings
+from app.core.proxy_env import sanitize_proxy_env
 
 
 def get_chat_model(
@@ -16,6 +17,9 @@ def get_chat_model(
 ) -> ChatOpenAI:
     """构造指向 DeepSeek 的 ChatOpenAI 实例（不发起任何网络请求）。"""
     settings = get_settings()
+    # ChatOpenAI 构造时会内部创建 httpx client，先规整代理环境变量，
+    # 避免宿主 NO_PROXY 里的方括号 IPv6（如 [::1]）导致 InvalidURL。
+    sanitize_proxy_env()
     kwargs: dict = {
         "model": settings.deepseek_model,
         "base_url": settings.deepseek_base_url,
