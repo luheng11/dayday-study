@@ -31,6 +31,30 @@ class Settings(BaseSettings):
     app_port: int = 8000
     app_debug: bool = True
 
+    # JWT（用户系统）
+    jwt_secret: str = "change-me-in-production"
+    jwt_expire_minutes: int = 43200  # 30 天
+
+    # 微信小程序（登录）
+    wechat_app_id: str = ""
+    wechat_app_secret: str = ""
+    # 开发降级：true 或未配置 AppID/Secret 时，登录接口用固定开发 openid（本地联调）
+    wechat_mock_login: bool = True
+
+    # MySQL（用户系统，可选登录：连不上时核心出题/报告仍可用）
+    mysql_host: str = "localhost"
+    mysql_port: int = 3306
+    mysql_user: str = "root"
+    mysql_password: str = "123456"
+    mysql_database: str = "chuangguan_xuetang"
+    mysql_charset: str = "utf8mb4"
+    mysql_pool_minsize: int = 1
+    mysql_pool_maxsize: int = 10
+    mysql_auto_init: bool = True
+
+    # 本地文件存储（头像等），生产多实例部署需换对象存储（Phase 10）
+    data_dir: str = "./data"
+
     # Log
     log_level: str = "INFO"
 

@@ -46,3 +46,12 @@ def sample_answer_records(sample_questions) -> list[AnswerRecord]:
 @pytest.fixture
 def sample_report_dict() -> dict:
     return json.loads(VALID_REPORT_JSON)
+
+
+@pytest.fixture
+def auth_header() -> dict:
+    """生成一个有效的 JWT（user_id=1）用于鉴权相关测试。"""
+    from app.core.auth import create_token
+
+    token = create_token(user_id=1, openid="test_openid_123")
+    return {"Authorization": f"Bearer {token}"}

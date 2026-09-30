@@ -19,6 +19,7 @@ from app.models.quiz import (
     QuizTaskStatusResponse,
 )
 from app.core.security import check_content
+from app.repositories import quiz_repository
 from app.services.task_store import task_store
 
 logger = structlog.get_logger()
@@ -33,6 +34,29 @@ def _new_quiz_id() -> str:
 
 def _new_task_id() -> str:
     return f"task_{uuid.uuid4().hex[:12]}"
+
+
+async def _persist_quiz_session(
+    result: QuizGenerateResponse,
+    req: QuizGenerateRequest,
+    user_id: int | None,
+) -> None:
+    """有登录态时把题库快照落库；落库失败绝不影响主流程。"""
+    if user_id is None:
+        return
+    try:
+        await quiz_repository.save_quiz_session(
+            quiz_id=result.quiz_id,
+            user_id=user_id,
+            title=result.title,
+            summary=result.summary,
+            user_input=req.user_input,
+            questions_json=[q.model_dump() for q in result.questions],
+        )
+    except Exception as exc:  # noqa: BLE001 —— 落库是尽力而为
+        logger.error(
+            "quiz_session_persist_failed", quiz_id=result.quiz_id, error=str(exc)
+        )
 
 
 async def _run_generation(req: QuizGenerateRequest) -> QuizGenerateResponse:
@@ -61,13 +85,17 @@ async def _run_generation(req: QuizGenerateRequest) -> QuizGenerateResponse:
     )
 
 
-async def handle_quiz_generate(req: QuizGenerateRequest) -> QuizGenerateResponse:
-    """同步出题：直接返回题库"""
+async def handle_quiz_generate(
+    req: QuizGenerateRequest, user_id: int | None = None
+) -> QuizGenerateResponse:
+    """同步出题：直接返回题库；有登录态时落库题库快照"""
     if not check_content(req.user_input):
         raise ContentFilterError("输入内容包含不当内容，请修改后重试")
 
     try:
-        return await _run_generation(req)
+        result = await _run_generation(req)
+        await _persist_quiz_session(result, req, user_id)
+        return result
     except QuizGenerationError:
         raise
     except Exception as exc:
@@ -75,22 +103,27 @@ async def handle_quiz_generate(req: QuizGenerateRequest) -> QuizGenerateResponse
         raise QuizGenerationError("题库生成失败，请稍后重试") from exc
 
 
-async def create_quiz_task(req: QuizGenerateRequest) -> QuizTaskCreateResponse:
+async def create_quiz_task(
+    req: QuizGenerateRequest, user_id: int | None = None
+) -> QuizTaskCreateResponse:
     """异步出题：立即返回 task_id，后台执行"""
     if not check_content(req.user_input):
         raise ContentFilterError("输入内容包含不当内容，请修改后重试")
 
     task_id = _new_task_id()
     await task_store.create(task_id)
-    asyncio.create_task(_run_quiz_task(task_id, req))
+    asyncio.create_task(_run_quiz_task(task_id, req, user_id))
     return QuizTaskCreateResponse(task_id=task_id)
 
 
-async def _run_quiz_task(task_id: str, req: QuizGenerateRequest) -> None:
+async def _run_quiz_task(
+    task_id: str, req: QuizGenerateRequest, user_id: int | None = None
+) -> None:
     await task_store.set_status(task_id, "running")
     logger.info("quiz_task_started", task_id=task_id)
     try:
         result = await _run_generation(req)
+        await _persist_quiz_session(result, req, user_id)
         await task_store.complete(task_id, result.model_dump())
         logger.info("quiz_task_completed", task_id=task_id, quiz_id=result.quiz_id)
     except Exception as exc:  # noqa: BLE001 —— 任务失败统一落 failed 状态

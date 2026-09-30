@@ -1,5 +1,6 @@
 """FastAPI 应用入口：路由注册 + 统一异常处理 + structlog 日志"""
 
+import os
 from contextlib import asynccontextmanager
 
 import structlog
@@ -7,17 +8,24 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-from app.api.v1.routes import health, quiz, report
+from app.api.v1.routes import health, quiz, report, user
 from app.core.config import get_settings
 from app.core.exceptions import (
+    AuthenticationError,
     BusinessError,
     ContentFilterError,
     QuizGenerationError,
     ReportGenerationError,
     TaskNotFoundError,
 )
+from app.core.proxy_env import sanitize_proxy_env
 from app.models.common import ApiResponse
+
+# 进程启动即规整代理环境变量：宿主 NO_PROXY 中的方括号 IPv6（如 [::1]）会让
+# httpx 客户端构造直接抛 InvalidURL，影响微信登录与 LLM 调用。
+sanitize_proxy_env()
 
 logger = structlog.get_logger()
 
@@ -26,7 +34,20 @@ logger = structlog.get_logger()
 async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info("app_starting", host=settings.app_host, port=settings.app_port)
+    if settings.mysql_auto_init:
+        try:
+            from app.core.db import init_mysql
+
+            await init_mysql()
+        except Exception as exc:  # noqa: BLE001 —— 连不上 MySQL 不阻断启动（匿名模式仍可用）
+            logger.warning("mysql_init_failed", error=str(exc))
     yield
+    try:
+        from app.core.db import close_mysql_pool
+
+        await close_mysql_pool()
+    except Exception:  # noqa: BLE001
+        pass
     logger.info("app_shutting_down")
 
 
@@ -50,9 +71,23 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(quiz.router, prefix="/api/v1")
 app.include_router(report.router, prefix="/api/v1")
+app.include_router(user.router, prefix="/api/v1")
+
+# 静态文件（用户头像等；生产多实例建议换对象存储）
+_settings = get_settings()
+os.makedirs(os.path.join(_settings.data_dir, "avatars"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=_settings.data_dir), name="static")
 
 
 # ---- 统一异常处理（错误码分段：400x 业务 / 401x 鉴权 / 500x 服务端） ----
+
+
+@app.exception_handler(AuthenticationError)
+async def auth_error_handler(request: Request, exc: AuthenticationError):
+    return JSONResponse(
+        status_code=401,
+        content=ApiResponse.error(code=4010, message=str(exc)).model_dump(),
+    )
 
 
 @app.exception_handler(ContentFilterError)

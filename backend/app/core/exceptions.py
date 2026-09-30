@@ -31,3 +31,7 @@ class ReportIntegrityError(AppError):
 
 class TaskNotFoundError(AppError):
     """异步任务不存在（错误码 4002）"""
+
+
+class AuthenticationError(AppError):
+    """未登录或登录凭证无效（错误码 4010）"""
