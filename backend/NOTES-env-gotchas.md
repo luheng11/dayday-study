@@ -90,14 +90,45 @@ ERROR: Permission to luheng11/dayday-study.git denied to deploy key
    加完后同一个 key 就能推任意仓库。
 2. 或给 `dayday-study` 单独加一个 **勾选 "Allow write access"** 的 deploy key。
 
-**先查身份再重试**（本机已配好 `-i` 时可直接用）：
+**顺带**：本机**没有** `gh` CLI、**没有** credential helper、**没有** 任何
+`GITHUB_TOKEN`/`GH_TOKEN`，所以无法走 HTTPS 令牌方式，也没有可用的交互式登录途径。
+
+### ✅ 最终解法（2026-09-30 已生效）
+
+GitHub 上那把 `lu`（指纹 `0nVN...`）是**另一台机器**的私钥，本机没有对应私钥。
+因此在本机新生成一把专用账号级 key 并加到 GitHub：
+
 ```powershell
-ssh -T git@github.com          # 期望看到 "Hi luheng11!"（账号级）
+ssh-keygen -t ed25519 -f "$env:USERPROFILE\.ssh\id_ed25519_github_account" -C "luheng11@github-account"
+# 指纹 SHA256:cA06+tLoPRbVfsCboo+bQFgJo0mheC8qPwVJeYdfPOE
+# 把 .pub 内容粘到 https://github.com/settings/ssh/new（Authentication Key）
+ssh -T git@github.com        # 必须看到 "Hi luheng11!"（账号级），而非 "Hi owner/repo!"
 git push -u origin main
 ```
 
-**顺带**：本机**没有** `gh` CLI、**没有** credential helper、**没有** 任何
-`GITHUB_TOKEN`/`GH_TOKEN`，所以无法走 HTTPS 令牌方式，也没有可用的交互式登录途径。
+**注意**：`~/.ssh/config` 在本机**不可写**（`EPERM: operation not permitted, fchmod`，
+连 `danger-full-access` 也改不动），所以 github.com 的 Host 条目**没能加进去**。
+改为在本仓库局部配置（无需改系统文件）：
+
+```powershell
+git config core.sshCommand "ssh -i C:/Users/14314/.ssh/id_ed25519_github_account -o IdentitiesOnly=yes"
+```
+
+⚠️ 路径**必须用正斜杠**：写成反斜杠时 git 的 config 引号解析会把 `\` 吃掉，
+变成 `C:Users14314.sshid_ed25519_github_account` 并报 `Identity file ... not accessible`。
+
+副作用：这是**仓库级**配置，换新仓库需要重新 `git config core.sshCommand ...` 一次。
+若想全局生效，请手动把下面这段加到 `C:\Users\14314\.ssh\config`（需要你自己有写权限）：
+
+```
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile C:\Users\14314\.ssh\id_ed25519_github_account
+  IdentitiesOnly yes
+```
+
+**结果**：`main` 已推送并跟踪 `origin/main`，本地与远程 HEAD 均为 `c07da4c`。
 
 ---
 
