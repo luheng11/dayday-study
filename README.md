@@ -70,8 +70,12 @@ docker run -d --name chuangguan-mysql -e TZ=Asia/Shanghai `
   --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 # 运行测试（mock 大模型，不消耗 API 额度；MySQL 仓储集成测试需额外开关）
-.\.venv\Scripts\python -m pytest              # 基础套件
-$env:RUN_MYSQL_TESTS='1'; .\.venv\Scripts\python -m pytest   # 含真实 MySQL 集成测试（270 passed）
+.\.venv\Scripts\python -m pytest              # 基础套件（265 passed / 15 skipped）
+$env:RUN_MYSQL_TESTS='1'; .\.venv\Scripts\python -m pytest   # 含真实 MySQL 集成测试
+
+# 一键验证真实 MySQL 仓储层（起容器 → 等就绪 → 跑集成测试 → 可选 e2e）
+.\.venv\Scripts\python scripts\verify_mysql.py         # 需 Docker Desktop 已启动
+.\.venv\Scripts\python scripts\verify_mysql.py --e2e   # 额外跑用户系统端到端
 
 # 启动服务（自动建库建表；连不上 MySQL 不阻断启动，匿名模式仍可用）
 .\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
@@ -82,8 +86,14 @@ $env:RUN_MYSQL_TESTS='1'; .\.venv\Scripts\python -m pytest   # 含真实 MySQL �
 
 | 模式 | 配置 | 用途 |
 |---|---|---|
-| Mock 模式（默认已配好） | `LLM_MOCK=true`（无需 Key） | 首次联调 / 演示完整闭环 |
-| 真实出题 | `LLM_MOCK=false` + `DEEPSEEK_API_KEY=你的Key` | 真实 AI 出题与报告 |
+| 真实出题（**代码默认值**） | `LLM_MOCK=false` + 有效的 `DEEPSEEK_API_KEY` | 真实 AI 出题与报告 |
+| Mock 模式（演示用，需手动开） | `LLM_MOCK=true`（无需 Key） | 首次联调 / 无 Key 演示完整闭环 |
+
+> ⚠️ **注意默认值方向**：`app/core/config.py` 中 `llm_mock` 默认为 **`false`**，
+> 即**不写 `LLM_MOCK` 就是真实调用 DeepSeek**，会消耗 API 额度。
+> `.env.example` 里给出的也是 `LLM_MOCK=false`。想跑 Mock 演示必须显式写 `LLM_MOCK=true`。
+> 另注意 `DEEPSEEK_MODEL` 需填**有效模型名**（`.env.example` 默认 `deepseek-chat`），
+> 模型名无效时出题接口会返回 5001。
 
 端到端冒烟（先启动服务）：
 
@@ -167,7 +177,26 @@ npm run dev:weapp                # 本地联调：development 配置（API 指�
 - **用户系统（Phase 5）**：JWT 签发/解析/必选与可选鉴权依赖、等级表、微信登录（mock/真实/异常分支）、档案聚合、历史分页与 range 过滤、统计纯函数（掌握度/薄弱点/连续打卡/7 日补齐）、头像上传、出题/报告落库钩子与 XP 规则（含重复报告不重复计 XP）
 - **真实 MySQL 仓储集成测试**（`RUN_MYSQL_TESTS=1`，独立测试库 `chuangguan_test`）：建表、用户 CRUD、upsert 语义、详情回查、分页/过滤/统计 SQL 与跨用户隔离
 - **Prompt 契约测试**：固定输入断言输出 Schema 字段完整，防改 Prompt 回归
+- **代理环境变量回归**（`tests/test_proxy_env.py`）：宿主 `NO_PROXY` 含方括号 IPv6 时
+  httpx 会在构造阶段崩溃，这里固化行为（含一条刻意断言故障本身的用例）
 - 真实 DeepSeek 联调：填入 Key 后 `LLM_MOCK=false` 重启，用 `/docs`、`scripts/e2e_user_system.py` 或小程序实测
+
+### 当前验证状态（2026-09-30 实测）
+
+| 项目 | 结果 |
+|---|---|
+| 基础套件 | ✅ `265 passed, 15 skipped, 3 errors` |
+| 真实 DeepSeek 出题 | ✅ `scripts/verify_deepseek.py`（模型 `deepseek-v4-flash` 有效，返回结构合规） |
+| 真实 DeepSeek 报告 | ✅ `scripts/verify_deepseek.py --report`（10.1s，在 20s 超时预算内） |
+| 真实 MySQL 仓储集成测试 | ⚠️ **未验证**（15 个用例长期 skipped，开发机 MySQL 未启动）→ 见 `TODO.md` A1 |
+| 微信开发者工具人工验收 | ⚠️ **未做** → 见 `TODO.md` A3 |
+| 前端类型检查 | ✅ `npx tsc --noEmit` 通过 |
+
+> `3 errors` 全部是 `test_avatar_api.py` 因沙箱/受限环境把 `TEMP` 重定向到不可写目录
+> 导致的 `tmp_path` 失败，**非代码缺陷**，普通终端下通过。
+> 15 个 skipped 是等待 `RUN_MYSQL_TESTS=1` 的 MySQL 集成测试。
+
+> 未完成事项与技术债统一登记在 **`TODO.md`**（按 🔴 阻断上线 / 🟠 上线前必做 / 🟡 应做 分级）。
 
 ---
 
