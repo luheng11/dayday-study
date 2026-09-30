@@ -1,4 +1,6 @@
 import { Component, PropsWithChildren } from 'react'
+import Taro from '@tarojs/taro'
+import { getToken, loginByCode, resolveLogin, setCachedUser, setToken } from './services/api'
 import './app.scss'
 
 /* 说明：标题字体「站酷快乐体」暂不通过网络加载 ——
@@ -10,6 +12,33 @@ import './app.scss'
  */
 
 class App extends Component<PropsWithChildren> {
+  componentDidMount() {
+    // 静默登录（Phase 5）：成功拿到 token 后所有请求自动携带；
+    // 失败不阻断核心功能（可选登录，出题/答题/报告匿名可用）。
+    if (getToken()) {
+      resolveLogin()
+      return
+    }
+    Taro.login({
+      success: (res) => {
+        if (!res.code) {
+          resolveLogin()
+          return
+        }
+        loginByCode(res.code)
+          .then((data) => {
+            setToken(data.token)
+            setCachedUser(data.user)
+          })
+          .catch(() => {
+            /* 登录失败不阻断核心功能 */
+          })
+          .finally(() => resolveLogin())
+      },
+      fail: () => resolveLogin(),
+    })
+  }
+
   render() {
     return this.props.children
   }

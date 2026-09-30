@@ -189,6 +189,51 @@
   flex: none;
 }
 
+/* ---------- 最近学过（原型 01-1 history） ---------- */
+.history {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: #fff;
+  border: 4rpx dashed var(--ink-soft, #8b8170);
+  border-radius: 24rpx;
+  padding: 16rpx 24rpx;
+  font-size: 24rpx;
+}
+.history-tag {
+  display: inline-block;
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 4rpx 16rpx;
+  border-radius: 14rpx;
+  border: 3rpx solid var(--ink, #2b2b2b);
+  background: var(--pri-soft, #ffe9b8);
+  flex: none;
+  max-width: 260rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-t {
+  font-weight: 800;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink, #2b2b2b);
+}
+.history-meta {
+  margin-left: auto;
+  color: var(--ink-soft, #8b8170);
+  font-size: 22rpx;
+  flex: none;
+}
+.history-acc {
+  color: var(--ok-deep, #2c9454);
+  font-weight: 800;
+}
+
 /* ---------- 输入态设置 ---------- */
 .optrow {
   display: flex;

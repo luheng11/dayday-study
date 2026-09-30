@@ -1,13 +1,24 @@
-/* 首页：默认 / 输入态 / AI 生成中 / 失败重试（严格按原型文件 01） */
+/* 首页：默认 / 输入态 / AI 生成中 / 失败重试（严格按原型文件 01）
+ * Phase 5：问候昵称 / 成长值 /「最近学过」接真实用户数据（未登录隐藏最近学过）
+ */
 
 import { useState } from 'react'
 import { View, Text, Textarea, Image, ScrollView } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import Mascot from '../../components/Mascot'
 import TabBar from '../../components/TabBar'
 import { ICONS } from '../../components/Icon/icons'
-import { generateQuizAsync, pollQuizTask } from '../../services/api'
+import {
+  generateQuizAsync,
+  getCachedUser,
+  getQuizHistory,
+  getUserProfile,
+  isLoggedIn,
+  pollQuizTask,
+  waitForLogin,
+} from '../../services/api'
 import { getXpTotal, saveQuizProgress } from '../../services/storage'
+import type { QuizHistoryItem } from '../../services/types'
 import './index.scss'
 
 type ViewState = 'default' | 'input' | 'loading' | 'fail'
@@ -50,13 +61,54 @@ const EXAMPLES: Example[] = [
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+/* 按时段问候（原型为 9:41 的「早上好」） */
+function greeting(): string {
+  const h = new Date().getHours()
+  if (h < 6) return '夜深了'
+  if (h < 12) return '早上好'
+  if (h < 18) return '下午好'
+  return '晚上好'
+}
+
+/* 相对时间（最近学过）：今天 9:48 / 昨天 19:02 / 3 天前 */
+function formatWhen(createdAt: string): string {
+  const date = new Date(createdAt.replace(/-/g, '/'))
+  if (Number.isNaN(date.getTime())) return ''
+  const hm = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  const today = new Date()
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const diffDays = Math.round((startOfDay(today) - startOfDay(date)) / 86400000)
+  if (diffDays === 0) return `今天 ${hm}`
+  if (diffDays === 1) return `昨天 ${hm}`
+  return `${diffDays} 天前`
+}
+
 export default function IndexPage() {
   const [viewState, setViewState] = useState<ViewState>('default')
   const [text, setText] = useState('')
   const [mode, setMode] = useState<'topic' | 'paste'>('topic')
   const [count, setCount] = useState(5)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
-  const [xp] = useState(() => getXpTotal())
+  const [nickname, setNickname] = useState(() => getCachedUser()?.nickname || '小闯同学')
+  const [xp, setXp] = useState(() => getXpTotal())
+  const [recent, setRecent] = useState<QuizHistoryItem | null>(null)
+
+  /* 每次显示：登录后拉取真实昵称/成长值/最近学过 */
+  useDidShow(() => {
+    void waitForLogin().then(() => {
+      if (!isLoggedIn()) return
+      getUserProfile()
+        .then((profile) => {
+          setNickname(profile.nickname || '小闯同学')
+          setXp(profile.total_xp)
+        })
+        .catch(() => {})
+      getQuizHistory({ page: 1, pageSize: 1, onlyCompleted: true })
+        .then((data) => setRecent(data.items[0] ?? null))
+        .catch(() => {})
+    })
+  })
 
   const placeholder =
     mode === 'topic'
@@ -302,7 +354,7 @@ export default function IndexPage() {
                   </View>
                   <View>
                     <View className='greet'>
-                      早上好，<Text className='greet-em'>小闯同学</Text>！👋
+                      {greeting()}，<Text className='greet-em'>{nickname}</Text>！👋
                     </View>
                     <View className='say hero-say'>
                       今天想学点什么？<Text className='say-b'>我来帮你出题闯关！</Text>
@@ -355,6 +407,30 @@ export default function IndexPage() {
                   <Text className='example-go'>5 关 →</Text>
                 </View>
               ))}
+
+              {/* 最近学过：登录后展示真实历史（原型 01-1） */}
+              {recent && (
+                <>
+                  <View className='sect-title'>最近学过</View>
+                  <View
+                    className='history'
+                    onClick={() =>
+                      Taro.navigateTo({
+                        url: `/pages/reportDetail/index?quizId=${recent.quiz_id}`,
+                      })
+                    }
+                  >
+                    <Text className='history-tag'>📚 {recent.title}</Text>
+                    <Text className='history-t'>
+                      {recent.report_snippet || ''}
+                    </Text>
+                    <Text className='history-meta'>
+                      {formatWhen(recent.created_at)} · 正确率{' '}
+                      <Text className='history-acc'>{Math.round(recent.accuracy)}%</Text>
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           )}
         </View>

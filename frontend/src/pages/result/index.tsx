@@ -5,7 +5,7 @@ import { View, Text, Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import Mascot from '../../components/Mascot'
 import { ICONS } from '../../components/Icon/icons'
-import { generateReport } from '../../services/api'
+import { generateReport, getUserProfile, isLoggedIn, setCachedUser } from '../../services/api'
 import {
   addXp,
   loadResult,
@@ -38,12 +38,15 @@ export default function ResultPage() {
   const [generating, setGenerating] = useState(false)
 
   // 成长值入账（每局一次，防重复）
+  // Phase 5：已登录时由服务端在报告接口统一入账，本地不再累加，避免双重计分
   useEffect(() => {
     if (result && !result.credited) {
-      addXp(result.xpEarned)
-      const next = { ...result, credited: true }
-      setResult(next)
-      saveResult(next)
+      const credited = { ...result, credited: true }
+      if (!isLoggedIn()) {
+        addXp(result.xpEarned)
+      }
+      setResult(credited)
+      saveResult(credited)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -79,6 +82,19 @@ export default function ResultPage() {
         answer_records: result.answerRecords,
       })
       saveLatestReport(report, quiz.title, Date.now())
+      // 登录后：服务端已入账 XP，同步刷新本地缓存（首页/我的直接读缓存展示）
+      if (isLoggedIn()) {
+        getUserProfile()
+          .then((profile) =>
+            setCachedUser({
+              id: profile.id,
+              nickname: profile.nickname,
+              avatar_url: profile.avatar_url,
+              total_xp: profile.total_xp,
+            }),
+          )
+          .catch(() => {})
+      }
       setGenerating(false)
       Taro.redirectTo({ url: '/pages/reportDetail/index' })
     } catch (e) {

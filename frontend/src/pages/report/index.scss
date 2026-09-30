@@ -1,3 +1,5 @@
+/* 「报告」Tab：历史报告库（原型文件 04-3，数值 = 原型 px × 2 rpx） */
+
 .page {
   height: 100vh;
   display: flex;
@@ -13,9 +15,171 @@
 }
 
 .sbody-inner {
-  padding: 12rpx 36rpx 40rpx;
+  padding: 12rpx 36rpx 48rpx;
 }
 
+/* ---------- 页面标题 ---------- */
+.page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 4rpx 0;
+}
+.title-t {
+  font-size: 42rpx;
+}
+.tag {
+  display: inline-block;
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 4rpx 16rpx;
+  border-radius: 14rpx;
+  border: 3rpx solid var(--ink, #2b2b2b);
+  background: var(--pri-soft, #ffe9b8);
+}
+
+/* ---------- 报告卡 ---------- */
+.rptcard {
+  background: #fff;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 32rpx;
+  box-shadow: 0 8rpx 0 rgba(43, 43, 43, 0.85);
+  padding: 28rpx;
+  margin-top: 28rpx;
+  position: relative;
+}
+.rc-head {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.rc-head-main {
+  flex: 1;
+  min-width: 0;
+}
+.rc-topic {
+  font-size: 28rpx;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rc-date {
+  font-size: 22rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 700;
+  margin-top: 4rpx;
+}
+
+/* 迷你环形正确率（原型 4.3 mini-donut 52px） */
+.mini-donut {
+  --dc: var(--ok, #3dbe6b);
+  margin-left: auto;
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  border: 5rpx solid var(--ink, #2b2b2b);
+  position: relative;
+  flex: none;
+  background: conic-gradient(var(--dc) 0 80%, var(--line, #efe2c2) 80% 100%);
+}
+.mini-donut.mid {
+  --dc: var(--pri, #ffb300);
+}
+.mini-donut.low {
+  --dc: var(--bad, #f04f4f);
+}
+.mini-donut::after {
+  content: '';
+  position: absolute;
+  inset: 14rpx;
+  background: #fff;
+  border-radius: 50%;
+  border: 4rpx solid var(--ink, #2b2b2b);
+}
+.mini-donut text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'ZCOOL KuaiLe', 'PingFang SC', sans-serif;
+  font-size: 28rpx;
+  color: var(--dc);
+  z-index: 2;
+  line-height: 1;
+}
+
+.snippet {
+  margin-top: 20rpx;
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 600;
+  background: var(--paper2, #fbf0d8);
+  border: 3rpx dashed var(--line, #efe2c2);
+  border-radius: 20rpx;
+  padding: 16rpx 20rpx;
+}
+
+.rc-foot {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+.rc-action {
+  flex: 1;
+  padding: 0;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 25rpx;
+  font-weight: 800;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 20rpx;
+  background: var(--pri, #ffb300);
+  color: var(--ink, #2b2b2b);
+  box-shadow: 0 4rpx 0 var(--ink, #2b2b2b);
+  text-align: center;
+}
+.rc-action::after {
+  border: none;
+}
+.rc-action.ghost {
+  background: #fff;
+}
+.rc-share {
+  width: 72rpx;
+  height: 72rpx;
+  padding: 0;
+  margin: 0;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 20rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 0 var(--ink, #2b2b2b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  line-height: 1;
+}
+.rc-share::after {
+  border: none;
+}
+.rc-share-icon {
+  font-size: 30rpx;
+}
+
+.empty-note {
+  margin-top: 32rpx;
+  text-align: center;
+  font-size: 23rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+/* ---------- 未登录：空态 ---------- */
 .empty-state {
   display: flex;
   flex-direction: column;

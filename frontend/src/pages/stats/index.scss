@@ -1,0 +1,272 @@
+/* 学习统计页（原型文件 04-2 数据统计，数值 = 原型 px × 2 rpx） */
+
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper, #fff9ec);
+  overflow: hidden;
+}
+
+.sbody {
+  flex: 1;
+  overflow: hidden;
+  height: 0;
+}
+
+.sbody-inner {
+  padding: 12rpx 36rpx 48rpx;
+}
+
+.card {
+  background: #fff;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 32rpx;
+  box-shadow: 0 8rpx 0 rgba(43, 43, 43, 0.85);
+}
+
+/* ---------- 页面标题 ---------- */
+.page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 4rpx 0;
+}
+.title-t {
+  font-size: 42rpx;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8rpx 22rpx;
+  font-size: 23rpx;
+  font-weight: 800;
+}
+
+/* ---------- 柱状图卡片 ---------- */
+.chart-card {
+  padding: 32rpx 28rpx 24rpx;
+  margin-top: 28rpx;
+}
+.chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.chart-h4 {
+  font-size: 26rpx;
+  font-weight: 900;
+}
+.chart-avg {
+  font-family: 'ZCOOL KuaiLe', 'PingFang SC', sans-serif;
+  color: var(--ok-deep, #2c9454);
+  font-size: 34rpx;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 18rpx;
+  height: 236rpx;
+  margin-top: 28rpx;
+  padding-top: 16rpx;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+  height: 100%;
+  justify-content: flex-end;
+}
+.bv {
+  font-size: 21rpx;
+  font-weight: 900;
+  color: var(--ink-soft, #8b8170);
+}
+.bv-none {
+  opacity: 0.5;
+}
+.bar {
+  width: 100%;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 14rpx 14rpx 0 0;
+  background: var(--pri-soft, #ffe9b8);
+}
+.bar.mid {
+  background: var(--pri, #ffb300);
+}
+.bar.hot {
+  background: var(--ok, #3dbe6b);
+}
+.bar.none {
+  height: 16rpx !important;
+  background: var(--paper2, #fbf0d8);
+}
+.bl {
+  font-size: 21rpx;
+  font-weight: 800;
+  color: var(--ink-soft, #8b8170);
+}
+.bar-col.today .bl {
+  color: var(--ink, #2b2b2b);
+  background: var(--pri, #ffb300);
+  border-radius: 12rpx;
+  padding: 2rpx 12rpx;
+  border: 3rpx solid var(--ink, #2b2b2b);
+}
+
+/* ---------- 知识点掌握度 ---------- */
+.master-card {
+  padding: 28rpx;
+  margin-top: 28rpx;
+}
+.master-body {
+  margin-top: 24rpx;
+}
+.empty-line {
+  font-size: 23rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 600;
+}
+.mrow {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 22rpx;
+}
+.mrow:last-child {
+  margin-bottom: 0;
+}
+.kn {
+  font-size: 24rpx;
+  font-weight: 800;
+  width: 168rpx;
+  flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track {
+  flex: 1;
+  height: 24rpx;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 14rpx;
+  background: #fff;
+  overflow: hidden;
+}
+.track-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  transition: width 0.4s;
+}
+.track-fill.hi {
+  background: repeating-linear-gradient(-45deg, var(--ok, #3dbe6b) 0 12rpx, #54ce85 12rpx 24rpx);
+}
+.track-fill.mid {
+  background: repeating-linear-gradient(-45deg, var(--pri, #ffb300) 0 12rpx, #ffc93d 12rpx 24rpx);
+}
+.track-fill.lo {
+  background: repeating-linear-gradient(-45deg, var(--bad, #f04f4f) 0 12rpx, #ff7a7a 12rpx 24rpx);
+}
+.pv {
+  font-size: 22rpx;
+  font-weight: 900;
+  width: 68rpx;
+  text-align: right;
+}
+.pv.hi {
+  color: var(--ok-deep, #2c9454);
+}
+.pv.mid {
+  color: var(--pri-deep, #e29c00);
+}
+.pv.lo {
+  color: var(--bad-deep, #cf3f3f);
+}
+
+/* ---------- 连续打卡 ---------- */
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  background: linear-gradient(135deg, #fff3d0, #ffe9b8);
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 28rpx;
+  box-shadow: 0 6rpx 0 rgba(43, 43, 43, 0.85);
+  padding: 24rpx 28rpx;
+  margin-top: 28rpx;
+}
+.streak-fire {
+  width: 80rpx;
+  height: 80rpx;
+  border: 4rpx solid var(--ink, #2b2b2b);
+  border-radius: 24rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: 40rpx;
+}
+.streak-txt {
+  flex: 1;
+  min-width: 0;
+}
+.streak-b {
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.streak-p {
+  font-size: 22rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 600;
+  margin-top: 4rpx;
+}
+
+/* ---------- 薄弱知识点 ---------- */
+.weak-list {
+  margin-top: 28rpx;
+  padding: 26rpx 28rpx;
+}
+.weak-h4 {
+  font-size: 26rpx;
+  font-weight: 900;
+  margin-bottom: 18rpx;
+  color: var(--bad-deep, #cf3f3f);
+}
+.weak-empty {
+  font-size: 23rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 600;
+}
+.weak-item {
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 1.6;
+  padding: 12rpx 16rpx;
+  background: var(--bad-soft, #fce8e8);
+  border: 3rpx dashed var(--bad, #f04f4f);
+  border-radius: 18rpx;
+  margin-bottom: 14rpx;
+}
+.weak-item:last-child {
+  margin-bottom: 0;
+}
+
+.login-hint {
+  margin-top: 28rpx;
+  text-align: center;
+  font-size: 23rpx;
+  color: var(--ink-soft, #8b8170);
+  font-weight: 600;
+}
+.login-hint-b {
+  color: var(--pri-deep, #e29c00);
+  font-weight: 800;
+}
